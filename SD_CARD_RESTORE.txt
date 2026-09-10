@@ -1,0 +1,56 @@
+Milk-V Duo S - SD Card Restore Instructions
+=============================================
+
+Image file: duo_s_backup.img.gz (374MB compressed)
+Source: 29.1GB SD card, 3 partitions (boot 128M FAT32, raw 2M, rootfs 768M ext4)
+
+RESTORE (Linux)
+---------------
+Identify your SD card device first! Check with: lsblk
+
+gunzip -c duo_s_backup.img.gz | sudo dd of=/dev/sdX bs=4M status=progress
+sync
+
+Replace /dev/sdX with your actual SD card device (e.g. /dev/sdb, /dev/sdc).
+DO NOT use /dev/sda unless you are sure that is the SD card.
+
+RESTORE (macOS)
+---------------
+diskutil list                  # find your SD card device
+diskutil unmountDisk /dev/diskN
+
+gunzip -c duo_s_backup.img.gz | sudo dd of=/dev/rdiskN bs=4m status=progress
+sync
+diskutil eject /dev/diskN
+
+RESTORE (Windows)
+-----------------
+1. Install Etcher (https://etcher.balena.io/) or use Win32DiskImager
+2. Decompress duo_s_backup.img.gz with 7-Zip to get duo_s_backup.img
+3. Flash duo_s_backup.img to SD card using Etcher or Win32DiskImager
+
+VERIFY AFTER FLASH
+------------------
+Insert SD card into Duo S, connect USB to Chromebook.
+
+Chromebook terminal (Linux):
+  sshpass -p "milkv" ssh root@192.168.42.1
+
+Check process is running:
+  ps | grep project_blue
+
+Check logs:
+  cat /root/project_blue.log
+
+Browser client:
+  Open PBControlStationV2.html
+  Enter IP: 192.168.42.1
+  Click Connect
+
+NOTES
+-----
+- Default SSH credentials: root / milkv
+- WebSocket server port: 8081
+- USB network IP (board): 192.168.42.1
+- Startup script: /mnt/system/auto.sh
+- LD_LIBRARY_PATH=/root/libs:/usr/lib:/lib
