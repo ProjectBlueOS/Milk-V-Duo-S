@@ -7,12 +7,16 @@ Instructions:
 ------------
 Flash the iso onto a SD card
 
-Plug into the milk V duo S board
+A) Plug into the milk V duo S board
+B) enter 192.168.42.1 into the IP box in the control station html viewer
+C) Click ping to ensure the service Project Blue service is reachable
+D) Click connect
+E) Ensure your computer is serving DHCP to the milk V Duo S board
 
 ensure your networking is using the following (hard coded):
 Milk V Duo S: Always 192.168.42.1
 
-*The actual board uses the USB RNDIS interface — no WiFi hardware exists on my development board so I had to do this.
+*The actual board uses the USB RNDIS interface — no WiFi hardware exists on my Milk V Duo S development board so I had to do this.
 
 SSH root@192.168.42.1  pw: milkv
 
