@@ -6,9 +6,13 @@ Linux as a tiny driver level with Project Blue OS riding on top of that.
 Instructions:
 ------------
 Flash the iso onto a SD card
+
 Plug into the milk V duo S board
+
 ensure your networking is using the following (hard coded):
 Milk V Duo S: Always 192.168.42.1
+
 *The actual board uses the USB RNDIS interface — no WiFi hardware exists on my development board so I had to do this.
+
 SSH root@192.168.42.1  pw: milkv
 
