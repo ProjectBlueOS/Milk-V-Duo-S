@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlueScript Pro SDK v6.0 Turbo — Milk-V Duo S Reference</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030305;
+            --surface: #0a0a12;
+            --accent: #22d3ee;
+            --turbo: #f0abfc;
+            --text: #f1f5f9;
+            --dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --green: #10b981;
+            --orange: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+        }
+
+        nav {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            border-right: 1px solid var(--border);
+            padding: 2.5rem 2rem;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 3rem;
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+        }
+
+        .nav-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--dim);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.4rem 0;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .nav-link:hover {
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        main {
+            margin-left: 280px;
+            padding: 3rem 5rem;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            letter-spacing: -0.04em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--accent), var(--turbo));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin: 4rem 0 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin: 2rem 0 1rem;
+            color: var(--accent);
+        }
+
+        p,
+        li {
+            color: var(--dim);
+            line-height: 1.7;
+            margin-bottom: 0.5rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: rgba(34, 211, 238, 0.3);
+        }
+
+        .desc {
+            color: var(--dim);
+            margin: 0.5rem 0 1rem;
+        }
+
+        .vars {
+            font-size: 0.85rem;
+            color: var(--green);
+        }
+
+        pre {
+            background: #000;
+            border-radius: 10px;
+            padding: 1.2rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.75rem;
+            color: var(--dim);
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            color: var(--accent);
+            font-size: 0.85em;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .tag-net {
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--accent);
+        }
+
+        .tag-fs {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--green);
+        }
+
+        .tag-hw {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--orange);
+        }
+
+        .tag-turbo {
+            background: rgba(240, 171, 252, 0.15);
+            color: var(--turbo);
+            border: 1px solid rgba(240, 171, 252, 0.3);
+        }
+
+        .turbo-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+
+        @media(max-width:900px) {
+            nav {
+                display: none;
+            }
+
+            main {
+                margin-left: 0;
+                padding: 2rem;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">BLUESCRIPT TURBO</div>
+        <div class="nav-group">
+            <div class="nav-label">Architecture</div>
+            <a href="#turbo-engine" class="nav-link">Turbo VM Backend</a>
+            <a href="#lifecycle" class="nav-link">Lifecycle & Syntax</a>
+            <a href="#coordinates" class="nav-link">Coordinate System</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">Graphics & Media</div>
+            <a href="#graphics" class="nav-link">Graphics Engine</a>
+            <a href="#audio" class="nav-link">Audio Engine</a>
+            <a href="#sprites" class="nav-link">Sprite System</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">Advanced 3D</div>
+            <a href="#threed-projection" class="nav-link">Projection Engine</a>
+            <a href="#threed-turbo" class="nav-link">3D.DrawCube (RVV)</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">Networking</div>
+            <a href="#ping" class="nav-link">SYSTEM.PING</a>
+            <a href="#wget" class="nav-link">SYSTEM.WGET</a>
+            <a href="#netstatus" class="nav-link">Network Status</a>
+            <a href="#email" class="nav-link">SendEmail</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">File System</div>
+            <a href="#filesystem" class="nav-link">IO Operations</a>
+            <a href="#dirlist" class="nav-link">SYSTEM.DIR</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">Hardware</div>
+            <a href="#gpio" class="nav-link">GPIO / ADC / DAC</a>
+            <a href="#serial" class="nav-link">Serial UART</a>
+            <a href="#peripherals" class="nav-link">Remote Peripherals</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">System</div>
+            <a href="#telemetry" class="nav-link">Telemetry &amp; Clock</a>
+            <a href="#appcontrol" class="nav-link">App Control</a>
+            <a href="#collision" class="nav-link">Collision Detection</a>
+            <a href="#math" class="nav-link">Math Functions</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">Reference</div>
+            <a href="#variables" class="nav-link">All Variables</a>
+            <a href="#colors" class="nav-link">Color Palette</a>
+        </div>
+    </nav>
+
+    <main>
+        <h1>BlueScript Pro SDK v6.0 Turbo</h1>
+        <p>Turbo Edition — Specialized for Milk-V Duo S (Dual-Core RISC-V @ 1GHz @ 512MB RAM).</p>
+
+        <!-- TURBO ARCHITECTURE -->
+        <h2 id="turbo-engine">Turbo VM Architecture <span class="tag tag-turbo">NEW</span></h2>
+        <div class="card">
+            <div class="turbo-badge"><span class="tag tag-turbo">v6.0 PRE-COMPILED</span></div>
+            <p class="desc">The Turbo engine replaces traditional interpretion with a two-pass compilation system, delivering 10-20x performance gains.</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+                <div>
+                   <h3 style="margin-top:0">1. Two-Pass Compiler</h3>
+                   <p style="font-size:0.9rem">Scripts are tokenized during <code>init()</code>. Labels, commands, and variable names are pre-resolved to integer IDs, eliminating runtime string lookups.</p>
+                </div>
+                <div>
+                   <h3 style="margin-top:0">2. Postfix Math (RPN)</h3>
+                   <p style="font-size:0.9rem">All expressions are converted to Reverse Polish Notation (RPN). The stack-based evaluator in <code>evaluateExpr</code> bypasses expensive recursive parsing.</p>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem;">
+                <h3 style="margin-top:0">3. Display List Acceleration</h3>
+                <p style="font-size:0.9rem">The <code>:onDraw</code> loop records commands into a binary <strong>Display List</strong> once per frame. The system then replays these commands at native speed across all UI stripes, completely decoupling script execution from pixel rendering.</p>
+            </div>
+        </div>
+
+        <!-- LIFECYCLE -->
+        <h2 id="lifecycle">Lifecycle & Language</h2>
+        <div class="card">
+            <table>
+                <tr>
+                    <td><code>:onDraw</code></td>
+                    <td><span class="tag tag-turbo">ACCELERATED</span> Rendering loop — recorded to Display List</td>
+                </tr>
+                <tr>
+                    <td><code>:onUpdate</code></td>
+                    <td>Logic loop — runs before draw at 10-20x speed</td>
+                </tr>
+                <tr>
+                    <td><code>:onMouseEvent</code></td>
+                    <td>Sets <code>event_type</code>, <code>event_x</code>, <code>event_y</code></td>
+                </tr>
+                <tr>
+                    <td><code>:onKeyboardEvent</code></td>
+                    <td>Sets <code>event_type</code>, <code>event_value</code></td>
+                </tr>
+            </table>
+            <pre># Variables & Expressions
+LET x = 10, y = 20, z = 30           # multi-LET
+LET label = "Heap: " + mem_free + " MB" # string concat
+LET blink = (second + (minute * 60)) % 2 # parentheses + nested math
+
+IF (score + bonus) > 100 THEN
+  IO.PRINT "High score!"
+ENDIF
+FOR i = 0 TO 10 STEP 2
+  Graphics.DrawCircle 200, 150, i * 5, CYAN
+NEXT</pre>
+            <p style="color:var(--dim)"><strong>Operators:</strong> <code>+</code> <code>-</code> <code>*</code>
+                <code>/</code> <code>%</code> <code>( )</code> &mdash; Expressions support <strong>unlimited nesting</strong> and <strong>unary negation</strong>. Variable access is O(1).</p>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0">Syntax Best Practices</h3>
+            <ul>
+                <li><strong>One Command Per Line</strong>: High-density scripts (using <code>:</code> for multi-command
+                    lines) are deprecated.</li>
+                <li><strong>System RAM Optimization</strong>: The interpreter leverages the Duo S's <strong>512MB RAM</strong>. Manual bank switching is not required.</li>
+                <li><strong>Logic in onUpdate</strong>: Place collision detection and math in <code>:onUpdate</code> for maximum performance.</li>
+            </ul>
+        </div>
+
+        <!-- COORDINATE SYSTEM -->
+        <h2 id="coordinates">Coordinate System</h2>
+        <div class="card">
+            <h3 style="margin-top:0">Content-Area Coordinates</h3>
+            <p class="desc">All drawing and input coordinates use the <strong>content area</strong> as their origin. (0,0) is top-left content.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Content Width</td>
+                        <td><code>396</code> px</td>
+                        <td>Available as <code>win_w</code></td>
+                    </tr>
+                    <tr>
+                        <td>Content Height</td>
+                        <td><code>318</code> px</td>
+                        <td>Available as <code>win_h</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- GRAPHICS -->
+        <h2 id="graphics">Graphics Engine <span class="tag tag-turbo">RECORDED</span></h2>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Command</th>
+                        <th>Arguments</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>Graphics.FillRect</code></td><td>x, y, w, h, color</td><td>Solid rectangle</td></tr>
+                    <tr><td><code>Graphics.DrawCircle</code></td><td>x, y, r, color</td><td>Circle outline</td></tr>
+                    <tr><td><code>Graphics.DrawLine</code></td><td>x1, y1, x2, y2, color</td><td>Vector Line</td></tr>
+                    <tr><td><code>Graphics.DrawString</code></td><td>x, y, "text", color</td><td>Fixed-width font</td></tr>
+                    <tr><td><code>Graphics.DrawProportional</code></td><td>x, y, "text", color, 0, scale</td><td>AA proportional font</td></tr>
+                    <tr><td><code>Graphics.DrawImage</code></td><td>"path", x, y</td><td>JPG/PNG/BMP via STB</td></tr>
+                    <tr><td><code>Graphics.DrawButton</code></td><td>x, y, w, h, "label", pressed</td><td>Native styled button</td></tr>
+                    <tr><td><code>Graphics.FillCircle</code></td><td>x, y, r, color</td><td>Solid filled circle</td></tr>
+                    <tr><td><code>Graphics.DrawTriangle</code></td><td>x1, y1, x2, y2, x3, y3, color</td><td>Triangle outline</td></tr>
+                    <tr><td><code>Graphics.DrawRect</code></td><td>x, y, w, h, color</td><td>Rectangle outline</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- COLOR PALETTE -->
+        <h2 id="colors">Color Reference <span class="tag tag-net">RGB565</span></h2>
+        <div class="card">
+            <table style="text-align: center;">
+                <tr>
+                    <td style="background: #000; color:#fff">BLACK (0x0000)</td>
+                    <td style="background: #fff; color:#000">WHITE (0xFFFF)</td>
+                    <td style="background: #f00; color:#fff">RED (0xF800)</td>
+                    <td style="background: #0f0; color:#000">GREEN (0x07E0)</td>
+                    <td style="background: #00f; color:#fff">BLUE (0x001F)</td>
+                </tr>
+                <tr>
+                    <td style="background: #0ff; color:#000">CYAN (0x07FF)</td>
+                    <td style="background: #f0f; color:#fff">MAGENTA (0xF81F)</td>
+                    <td style="background: #ff0; color:#000">YELLOW (0xFFE0)</td>
+                    <td style="background: #f80; color:#fff">ORANGE (0xFD20)</td>
+                    <td style="background: #808; color:#fff">PURPLE (0x780F)</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- AUDIO -->
+        <h2 id="audio">Audio Engine</h2>
+        <div class="card">
+            <table>
+                <tr><td><code>Audio.PlaySfx id</code></td><td>1:Click, 2:Laser, 3:Explosion, 4:Jump</td></tr>
+                <tr><td><code>Audio.StreamMp3 "path"</code></td><td>MP3 stream from storage</td></tr>
+            </table>
+        </div>
+
+        <!-- NETWORKING -->
+        <h2 id="ping">SYSTEM.PING <span class="tag tag-net">NETWORK</span></h2>
+        <div class="card">
+            <pre>SYSTEM.PING "google.com"
+IF ping_success = 1 THEN
+  Graphics.DrawString 10, 10, "RTT: " + ping_ms + "ms", GREEN
+ENDIF</pre>
+        </div>
+
+        <h2 id="wget">SYSTEM.WGET <span class="tag tag-net">NETWORK</span></h2>
+        <div class="card">
+            <pre>SYSTEM.WGET "https://example.com/data.json", "/downloads/data.json"
+IF wget_success = 1 THEN
+  IO.PRINT "Got " + wget_size + " bytes"
+ENDIF</pre>
+        </div>
+
+        <h2 id="netstatus">Network Status <span class="tag tag-net">NETWORK</span></h2>
+        <div class="card">
+            <table>
+                <tr><td><code>Network.GetIP</code></td><td><code>net_ip</code></td><td>Board IP</td></tr>
+                <tr><td><code>Network.GetRSSI</code></td><td><code>net_rssi</code></td><td>WiFi signal</td></tr>
+                <tr><td><code>Network.IsConnected</code></td><td><code>net_connected</code></td><td>1 = connected</td></tr>
+                <tr><td><code>Network.WaitConnected</code></td><td>&mdash;</td><td>Blocks until connected</td></tr>
+                <tr><td><code>Network.SendEmail</code></td><td>&mdash;</td><td>See Email section</td></tr>
+                <tr><td><code>OS.Delay ms</code></td><td>&mdash;</td><td>Pause execution</td></tr>
+            </table>
+        </div>
+
+        <h2 id="email">Network.SendEmail <span class="tag tag-net">NETWORK</span></h2>
+        <div class="card">
+            <pre># Minimal usage (uses config.txt)
+Network.SendEmail "to@example.com", "Subject", "Hello from BlueScript!"</pre>
+            <p class="desc">Uses SMTP credentials from <code>config.txt</code> on SD card root.</p>
+        </div>
+
+        <!-- FILE SYSTEM -->
+        <h2 id="filesystem">File System <span class="tag tag-fs">IO</span></h2>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr><th>Command</th><th>Arguments</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>IO.MKDIR</code></td><td>"path"</td><td>Create directory</td></tr>
+                    <tr><td><code>IO.REMOVE</code></td><td>"path"</td><td>Recursive delete</td></tr>
+                    <tr><td><code>IO.RENAME</code></td><td>"old", "new"</td><td>Rename/Move</td></tr>
+                    <tr><td><code>IO.COPY</code></td><td>"src", "dest"</td><td>File copy</td></tr>
+                    <tr><td><code>IO.EXISTS</code></td><td>"path"</td><td>Checks file</td></tr>
+                    <tr><td><code>IO.Zip</code></td><td>"source", "out.zip"</td><td>Async Compress</td></tr>
+                    <tr><td><code>IO.Unzip</code></td><td>"in.zip", "dest"</td><td>Async Extract</td></tr>
+                    <tr><td><code>IO.PRINT</code></td><td>"message"</td><td>System log</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 id="dirlist">Directory Listing <span class="tag tag-fs">IO</span></h2>
+        <div class="card">
+            <pre>SYSTEM.DIR "/scripts"
+FOR i = 0 TO file_count - 1
+  Graphics.DrawString 10, 20 + i * 16, file_0, WHITE
+NEXT</pre>
+        </div>
+
+        <!-- HARDWARE IO -->
+        <h2 id="gpio">GPIO / ADC / DAC <span class="tag tag-hw">HARDWARE</span></h2>
+        <div class="card">
+            <table>
+                <tr><td><code>IO.DigitalWrite pin, val</code></td><td>Set GPIO (0/1)</td></tr>
+                <tr><td><code>IO.ReadAdc pin</code></td><td>Analog read → <code>adc_val</code></td></tr>
+                <tr><td><code>IO.WriteDac channel, val</code></td><td>DAC output (0–255)</td></tr>
+            </table>
+        </div>
+
+        <h2 id="serial">Serial UART <span class="tag tag-hw">HARDWARE</span></h2>
+        <div class="card">
+            <table>
+                <tr><td><code>IO.SerialRead</code></td><td>Read UART → <code>serial_in</code></td></tr>
+                <tr><td><code>IO.SerialWrite "text"</code></td><td>Write to UART</td></tr>
+            </table>
+        </div>
+
+        <!-- PERIPHERALS -->
+        <h2 id="peripherals">Remote Peripherals <span class="tag tag-hw">HARDWARE</span></h2>
+        <div class="card">
+            <table>
+                <tr><td><code>Peripherals.Scan</code></td><td>Broadcast discovery</td></tr>
+                <tr><td><code>Peripherals.Add "ip"</code></td><td>Register remote node</td></tr>
+                <tr><td><code>Peripherals.SetGpio "ip", pin, val</code></td><td>Remote GPIO toggle</td></tr>
+                <tr><td><code>Peripherals.GetAdc "ip", pin</code></td><td>Remote analog read → <code>adc_val</code></td></tr>
+            </table>
+        </div>
+
+        <!-- SYSTEM -->
+        <h2 id="telemetry">System Telemetry & Clock</h2>
+        <div class="card">
+            <table>
+                <tr><td><code>SYSTEM.GETTIME</code></td><td>hour, minute, second, day, month, year</td><td>Read RTC</td></tr>
+                <tr><td><code>System.SetTime</code></td><td>yr, m, d, h, min</td><td>Set RTC</td></tr>
+                <tr><td><code>SYSTEM.TOP</code></td><td>mem_free, tasks_count</td><td>System Stats</td></tr>
+                <tr><td><code>System.GetStats</code></td><td>heap_free</td><td>Memory metrics</td></tr>
+                <tr><td><code>System.GetCpuTemp</code></td><td>cpu_temp</td><td>SoC Temp (°C)</td></tr>
+                <tr><td><code>System.GetUptime</code></td><td>uptime</td><td>Seconds from boot</td></tr>
+                <tr><td><code>System.GetChipType</code></td><td>chip_type</td><td>Identifies hardware</td></tr>
+            </table>
+        </div>
+
+        <h2 id="appcontrol">App Control</h2>
+        <div class="card">
+            <table>
+                <tr><td><code>SYSTEM.APPNAME "title"</code></td><td>Set window title</td></tr>
+                <tr><td><code>System.SetBackground "path"</code></td><td>Set wallpaper</td></tr>
+                <tr><td><code>System.ClearBackground</code></td><td>Remove wallpaper</td></tr>
+                <tr><td><code>System.Reset / REBOOT</code></td><td>Hardware restart</td></tr>
+                <tr><td><code>System.Close</code></td><td>Terminate app</td></tr>
+            </table>
+        </div>
+
+        <!-- 3D -->
+        <h2 id="threed-projection">3D Projection Engine</h2>
+        <div class="card">
+            <pre># Define vertices and manipulate projection manually
+LET v0_x = -50, v0_y = -50, v0_z = 50
+3D.MatrixRotate "Y", 45
+3D.TransformPoints
+3D.ProjectPoints
+Graphics.DrawLine p0_x, p0_y, p1_x, p1_y, WHITE</pre>
+        </div>
+
+        <h2 id="threed-turbo">Turbo 3D Core <span class="tag tag-turbo">RVV ACCELERATED</span></h2>
+        <div class="card">
+            <div class="turbo-badge"><span class="tag tag-turbo">VECTOR CORE</span></div>
+            <p class="desc">Direct hardware call utilizing RISC-V Vector (RVV) instructions.</p>
+            <pre>3D.DrawCube cx, cy, size, angY, angX, fCol, bCol, eCol</pre>
+        </div>
+
+        <!-- COLLISION -->
+        <h2 id="collision">Collision Detection <span class="tag tag-hw">NATIVE</span></h2>
+        <div class="card">
+            <table>
+                <tr><td><code>Collision.Rect</code></td><td>x1, y1, w1, h1, x2, y2, w2, h2</td><td><code>collision_hit</code></td></tr>
+                <tr><td><code>Collision.Circle</code></td><td>x1, y1, r1, x2, y2, r2</td><td><code>collision_hit</code>, <code>collision_dist</code></td></tr>
+                <tr><td><code>Collision.PointRect</code></td><td>px, py, rx, ry, rw, rh</td><td><code>collision_hit</code></td></tr>
+            </table>
+        </div>
+
+        <!-- MATH -->
+        <h2 id="math">Math Functions <span class="tag tag-hw">NATIVE</span></h2>
+        <div class="card">
+            <table>
+                <tr><td><code>Math.Sin / Cos</code></td><td>degrees</td><td>Sets <code>result</code></td></tr>
+                <tr><td><code>Math.Sqrt / Abs</code></td><td>value</td><td>Sets <code>result</code></td></tr>
+                <tr><td><code>Math.Random</code></td><td>min, max</td><td>Sets <code>result</code></td></tr>
+            </table>
+        </div>
+
+        <!-- SPRITES -->
+        <h2 id="sprites">Sprite System <span class="tag tag-hw">NATIVE</span></h2>
+        <div class="card">
+            <p class="desc">16 cached slots in System RAM.</p>
+            <table>
+                <tr><td><code>Sprite.Load</code></td><td>id, "path"</td><td>Cache image</td></tr>
+                <tr><td><code>Sprite.Draw</code></td><td>id, x, y</td><td>Native render</td></tr>
+                <tr><td><code>Sprite.DrawScaled</code></td><td>id, x, y, sx, sy</td><td>Native scale</td></tr>
+                <tr><td><code>Sprite.GetSize</code></td><td>id</td><td>Sets <code>sprite_w/h</code></td></tr>
+            </table>
+        </div>
+
+        <!-- VARIABLES -->
+        <h2 id="variables">All Reserved Variables</h2>
+        <div class="card">
+            <h3>Input & UI</h3>
+            <table>
+                <tr><th>Variable</th><th>Description</th></tr>
+                <tr><td><code>event_type</code></td><td>"Down", "Up", "Move", "KeyDown"</td></tr>
+                <tr><td><code>event_x / event_y</code></td><td>Input offsets in content area</td></tr>
+                <tr><td><code>event_value</code></td><td>Key name or char</td></tr>
+                <tr><td><code>win_w / win_h</code></td><td>Usable area dimensions</td></tr>
+                <tr><td><code>delta_time</code></td><td>Seconds since last update</td></tr>
+            </table>
+            <h3>Networking & File System</h3>
+            <table>
+                <tr><th>Variable</th><th>Description</th></tr>
+                <tr><td><code>ping_ms / ping_success</code></td><td>ICMP results</td></tr>
+                <tr><td><code>wget_size / wget_success</code></td><td>Download metrics</td></tr>
+                <tr><td><code>io_success</code></td><td>File Op status</td></tr>
+                <tr><td><code>file_count / file_0...N</code></td><td>Dir Listing</td></tr>
+            </table>
+            <h3>System Clock & Metrics</h3>
+            <table>
+                <tr><th>Variable</th><th>Description</th></tr>
+                <tr><td><code>hour/min/sec/day/month/year</code></td><td>Clock state</td></tr>
+                <tr><td><code>mem_free</code></td><td>Free RAM in MB</td></tr>
+                <tr><td><code>cpu_temp</code></td><td>SoC Temperature</td></tr>
+                <tr><td><code>cpu_load</code></td><td>CPU usage (0-100)</td></tr>
+                <tr><td><code>uptime</code></td><td>Ticks since boot</td></tr>
+            </table>
+        </div>
+
+        <footer style="margin-top:6rem; padding-top:2rem; border-top:1px solid var(--border); color:var(--dim); font-size:0.8rem; text-align:center;">
+            &copy; 2026 Project Blue — Turbo BlueScript SDK v6.0 | Milk-V Duo S Target
+        </footer>
+    </main>
+</body>
+
+</html>
