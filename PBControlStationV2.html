@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Project Blue - Ultimate Client (Milk-V Duo S)</title>
+    <meta charset="utf-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --panel-bg: rgba(20, 25, 35, 0.7);
+            --text-color: #e0faff;
+            --primary: #00f2ff;
+            --neon-cyan: #00f2ff;
+            --neon-blue: #0077ff;
+            --success: #00ffaa;
+            --error: #ff3366;
+            --warning: #ffcc00;
+            --border: rgba(0, 242, 255, 0.3);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 50%, #101520 0%, #050505 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h2 {
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--primary);
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px 30px;
+            border-radius: 16px;
+            box-shadow: var(--glass-shadow);
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .control-panel:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
+        }
+
+        input[type="text"] {
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+            width: 180px;
+            font-family: 'Outfit', sans-serif;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            padding: 10px 24px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            font-size: 0.8em;
+            letter-spacing: 1px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .connect {
+            background: rgba(0, 255, 170, 0.15) !important;
+            border-color: var(--success) !important;
+            color: var(--success);
+        }
+
+        .disconnect {
+            background: rgba(255, 51, 102, 0.15) !important;
+            border-color: var(--error) !important;
+            color: var(--error);
+        }
+
+        .fullscreen {
+            background: rgba(0, 119, 255, 0.15) !important;
+            border-color: var(--neon-blue) !important;
+            color: var(--neon-blue);
+        }
+
+        .ping {
+            background: rgba(255, 204, 0, 0.15) !important;
+            border-color: var(--warning) !important;
+            color: var(--warning);
+        }
+
+        #frameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+            background-color: #000;
+            overflow: hidden;
+            cursor: crosshair;
+            transition: all 0.5s ease;
+        }
+
+        #glCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            margin-top: 15px;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            color: rgba(0, 242, 255, 0.7);
+        }
+
+        #fpsDisplay {
+            color: var(--primary);
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
+
+        body.fullscreen-mode .control-panel,
+        body.fullscreen-mode .status-bar,
+        body.fullscreen-mode h2,
+        body.fullscreen-mode .info {
+            display: none;
+        }
+
+        body.fullscreen-mode #frameContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            border-radius: 0;
+            margin: 0;
+            z-index: 1000;
+        }
+
+        .info {
+            margin-top: 30px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            text-align: center;
+            max-width: 800px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        #frameContainer::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%);
+            background-size: 100% 2px;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.1;
+        }
+
+        .audio-hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Project Blue Control Station (Milk-V Duo S)</h2>
+
+    <div class="control-panel">
+        <input type="text" id="ipAddressInput" placeholder="ESP32 IP Address" value="192.168.1.10">
+        <button id="connectButton" class="connect">Connect</button>
+        <button id="pingButton" class="ping">Ping Board</button>
+        <button id="fullscreenButton" class="fullscreen" disabled>Full Screen</button>
+    </div>
+
+    <div class="status-bar" style="margin-bottom: 20px;">
+        <div id="status">Ready</div>
+        <div id="fpsDisplay">FPS: --</div>
+    </div>
+
+    <div id="frameContainer">
+        <canvas id="glCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <div class="info">
+        <div style="font-weight: 600; color: var(--primary); margin-bottom: 5px;">OMEGA SYSTEM TRANSMISSION</div>
+        <div style="font-size: 0.8em; color: rgba(255,255,255,0.4);">
+            ACCELERATED RLE v2.0 | ADAPTIVE RESOLUTION | GLASSMORPHISM SHELL
+        </div>
+    </div>
+
+    <audio id="audioPlayer" class="audio-hidden"></audio>
+
+    <script id="decoder-worker" type="javascript/worker">
+        const worker_lut = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+            const r3 = (i >> 5) & 0x07;
+            const g3 = (i >> 2) & 0x07;
+            const b2 = i & 0x03;
+                        const r8 = (r3 << 5) | (r3 << 2) | (r3 >> 1);
+            const g8 = (g3 << 5) | (g3 << 2) | (g3 >> 1);
+            const b8 = (b2 << 6) | (b2 << 4) | (b2 << 2) | b2;
+            worker_lut[i] = r8 | (g8 << 8) | (b8 << 16) | (255 << 24);
+        }
+
+        const WIDTH = 800;
+        const HEIGHT = 600;
+
+        self.onmessage = function(e) {
+            try {
+                const ab = e.data.buffer;
+                const type = e.data.type || 0x02;
+                if (!ab) return;
+
+                if (type === 0x04) {                     if (ab.byteLength < 9) return;
+                    const headerView = new DataView(ab, 1, 8);
+                    const winX = headerView.getUint16(0, true);
+                    const winY = headerView.getUint16(2, true);
+                    const winW = headerView.getUint16(4, true);
+                    const winH = headerView.getUint16(6, true);
+
+                    const jpegBlob = new Blob([ab.slice(9)], { type: 'image/jpeg' });
+                    createImageBitmap(jpegBlob).then(bitmap => {
+                        const canvas = new OffscreenCanvas(winW, winH);
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(bitmap, 0, 0, winW, winH);
+                        const imageData = ctx.getImageData(0, 0, winW, winH).data;
+
+                        const total = winW * winH;
+                        const pixels = new Uint32Array(total);
+
+                        for (let i = 0; i < total; i++) {
+                            const r = imageData[i * 4];
+                            const g = imageData[i * 4 + 1];
+                            const b = imageData[i * 4 + 2];
+                            pixels[i] = r | (g << 8) | (b << 16) | (255 << 24);
+                        }
+                        self.postMessage({ y: winY, w: winW, h: winH, pixels: pixels, isFullFrame: false, videoX: winX }, [pixels.buffer]);
+                    }).catch(err => {
+                        console.error("JPEG Decode Error:", err);
+                    });
+                    return;
+                }
+
+                if (ab.byteLength < 1) return;
+                const view = new DataView(ab);
+                const mode = view.getUint8(0);
+
+                if (mode === 6) {                     if (ab.byteLength < 13) return; 
+                    const x = view.getUint16(1, true);
+                    const y = view.getUint16(3, true);
+                    const w = view.getUint16(5, true);
+                    const h = view.getUint16(7, true);
+                    const rleLen = view.getUint32(9, true);
+                    let offset = 13;
+
+                    if (offset + rleLen > ab.byteLength) return;
+                    const rle = new Uint8Array(ab, offset, rleLen);
+                    let rleIdx = 0, pxIdx = 0;
+                    const total = w * h;
+                    const runPixels = new Uint32Array(total);
+
+                    while (rleIdx < rleLen && pxIdx < total) {
+                        if (rleIdx + 3 > rleLen) break;
+                        const count = rle[rleIdx++];
+                        const c16 = (rle[rleIdx++] << 8) | rle[rleIdx++];
+                                                const r = (c16 >> 8) & 0xFF;
+                        const g = ((c16 >> 4) & 0x0F) << 4;
+                        const b = (c16 & 0x0F) << 4;
+                        const color32 = r | (g << 8) | (b << 16) | (255 << 24);
+                        runPixels.fill(color32, pxIdx, Math.min(pxIdx + count, total));
+                        pxIdx += count;
+                    }
+
+                    self.postMessage({ videoX: x, y: y, w: w, h: h, pixels: runPixels, isFullFrame: false }, [runPixels.buffer]);
+                    return;
+                }
+
+                if (mode === 5) {                     if (ab.byteLength < 4) return;
+                    const isFullSync = view.getUint8(1) === 1;
+                    const isFrameEnd = view.getUint8(2) === 1;
+                    const stripeCount = view.getUint8(3);
+                    const headerSize = view.getUint8(0);
+                    let offset = headerSize + 4;
+
+                    const runsToPost = [];
+
+                    for (let s = 0; s < stripeCount; s++) {
+                        if (offset + 6 > ab.byteLength) break;
+                        const y = view.getUint16(offset);
+                        const h = view.getUint16(offset + 2);
+                        const runCount = view.getUint8(offset + 4);
+                        offset += 6;
+
+                        for (let r = 0; r < runCount; r++) {
+                            if (offset + 6 > ab.byteLength) break;
+                            const startX = view.getUint16(offset);
+                            const runW = view.getUint16(offset + 2);
+                            const rleLen = view.getUint16(offset + 4);
+                            offset += 6;
+
+                            if (offset + rleLen > ab.byteLength) break;
+                            const rle = new Uint8Array(ab, offset, rleLen);
+                            let rleIdx = 0, pxIdx = 0;
+                            const total = runW * h;
+                            const runPixels = new Uint32Array(total);
+
+                            while (rleIdx < rleLen && pxIdx < total) {
+                                if (rleIdx + 3 > rleLen) break;
+                                const count = rle[rleIdx++];
+                                const c16 = (rle[rleIdx++] << 8) | rle[rleIdx++];
+                                                                const rr = (c16 >> 8) & 0xFF;
+                                const gg = ((c16 >> 4) & 0x0F) << 4;
+                                const bb = (c16 & 0x0F) << 4;
+                                const color32 = rr | (gg << 8) | (bb << 16) | (255 << 24);
+                                runPixels.fill(color32, pxIdx, Math.min(pxIdx + count, total));
+                                pxIdx += count;
+                            }
+
+                            runsToPost.push({ videoX: startX, y: y, w: runW, h: h, pixels: runPixels });
+                            offset += rleLen;
+                        }
+                    }
+
+                    if (runsToPost.length > 0 || isFrameEnd) {
+                        const transferList = runsToPost.map(r => r.pixels.buffer);
+                        self.postMessage({ runs: runsToPost, isFullFrame: isFullSync, isFrameEnd: isFrameEnd }, transferList);
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.error("Worker Decode Error:", err);
+            }
+        };
+    </script>
+
+    <script>
+                const WS_PORT_UI = 8081;
+        const DEFAULT_WIDTH = 800;
+        const DEFAULT_HEIGHT = 600;
+        const APPEND_THROTTLE_MS = 25;
+        const MOUSE_THROTTLE_MS = 30;
+        const WHEEL_THROTTLE_MS = 50;
+        const MIN_BUFFER_TIME = 1.5;
+
+                const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+
+                function getMSECodec() {
+            if (!window.MediaSource) return null;
+                        const codecs = ['audio/mpeg', 'audio/mp4; codecs="mp4a.40.2"'];
+            for (const codec of codecs) {
+                if (MediaSource.isTypeSupported(codec)) {
+                    console.log(`MSE codec supported: ${codec}`);
+                    return codec;
+                }
+            }
+            return null;
+        }
+        const MIME_CODEC = getMSECodec();
+                        const USE_BLOB_AUDIO = isFirefox || !MIME_CODEC;
+        if (USE_BLOB_AUDIO) {
+            console.log(`Using Blob Audio fallback (Firefox=${isFirefox})`);
+                        if (isFirefox) {
+                console.warn('⚠️ Firefox audio streaming has limitations. Chrome is recommended for best audio quality.');
+            }
+        } else {
+            console.log(`Using MSE audio (${MIME_CODEC})`);
+        }
+
+        const PACKET_TYPE_AUDIO = 0x01;
+        const PACKET_TYPE_VIDEO = 0x02;
+        const PACKET_TYPE_RAW8 = 0x03;
+        const PACKET_TYPE_JPEG_VIDEO = 0x04;
+        const PACKET_TYPE_SINGLE_RLE = 0x06;
+        const PACKET_TYPE_MP4_VIDEO = 0x07;
+        const PACKET_TYPE_AUDIO_STREAM = 0x0A;
+
+                const canvas = document.getElementById('glCanvas');
+        const frameContainer = document.getElementById('frameContainer');
+        const gl = canvas.getContext('webgl', { alpha: false, depth: false, antialias: true });
+        const connectButton = document.getElementById('connectButton');
+        const pingButton = document.getElementById('pingButton');
+        const ipInput = document.getElementById('ipAddressInput');
+        const fullScreenBtn = document.getElementById('fullscreenButton');
+        const statusDiv = document.getElementById('status');
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const audioPlayer = document.getElementById('audioPlayer');
+
+                let uiSocket;
+        let videoWorker;
+        let frameCount = 0;
+        let lastFpsTime = performance.now();
+        let lastMouseSendTime = 0;
+        let lastWheelSendTime = 0;
+        let isFullscreen = false;
+
+        let frameWidth = DEFAULT_WIDTH;
+        let frameHeight = DEFAULT_HEIGHT;
+        let sliceHeight = 16; 
+                let audioQueue = [];
+        let mediaSource = null;
+        let sourceBuffer = null;
+        let appendInterval = null;
+        let isAudioStopped = false;
+        let audioStreamActive = false;
+
+                let blobAudioChunks = [];
+        let blobAudioPlayer = null;
+        let blobPlaybackActive = false;
+        let blobBufferTimeout = null;
+
+                let mp4Chunks = [];
+        let mp4ExpectedSize = 0;
+        let mp4ReceivedSize = 0;
+        let mp4VideoElement = null;
+        let mp4BlobUrl = null;
+        let mp4WindowRect = { x: 0, y: 0, w: 320, h: 240 }; 
+                let ytOverlay = null;
+        let ytIframe = null;
+        let ytWindowRect = { x: 0, y: 0, w: 336, h: 200 };
+        let currentSiteType = 'generic'; 
+        function cleanupYTPlayer() {
+            if (ytOverlay) {
+                ytOverlay.remove();
+                ytOverlay = null;
+            }
+            ytIframe = null;
+            currentSiteType = 'generic';
+        }
+
+        function detectSiteType(url) {
+            try {
+                const u = new URL(url);
+                const h = u.hostname.toLowerCase();
+                if (h.includes('youtube.com') || h.includes('youtu.be')) return 'youtube';
+                if (h.includes('bitchute.com')) return 'bitchute';
+                if (h.includes('odysee.com')) return 'odysee';
+                if (h.includes('aniwatchtv.to') || h.includes('aniwatch')) return 'aniwatch';
+            } catch (e) { }
+            return 'generic';
+        }
+
+        function convertToEmbedUrl(url) {
+            try {
+                const u = new URL(url);
+                const h = u.hostname.toLowerCase();
+
+                                if (h.includes('youtube.com') || h.includes('youtu.be')) {
+                    let videoId = '';
+                    if (h.includes('youtu.be')) {
+                        videoId = u.pathname.substring(1);
+                    } else if (u.pathname.includes('/embed/')) {
+                        return url;
+                    } else {
+                        videoId = u.searchParams.get('v');
+                    }
+                    if (videoId) {
+                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&enablejsapi=1`;
+                    }
+                }
+
+                                if (h.includes('bitchute.com')) {
+                    const match = u.pathname.match(/\/video\/([\w-]+)/);
+                    if (match) {
+                        return `https://www.bitchute.com/embed/${match[1]}/`;
+                    }
+                }
+
+                                if (h.includes('odysee.com')) {
+                                        const pathParts = u.pathname.split('/');
+                    if (pathParts.length >= 3 && !u.pathname.includes('/$/embed/')) {
+                                                const claimPath = pathParts.filter(p => p && p !== '$').join('/');
+                        return `https://odysee.com/$/embed/${claimPath}`;
+                    }
+                }
+
+                                            } catch (e) {
+                console.error('URL Conversion Error:', e);
+            }
+            return url;
+        }
+
+                let initialFrameBuffer = new Uint32Array(DEFAULT_WIDTH * DEFAULT_HEIGHT);
+        let receivedSlices = [];         let isInitialSync = false;
+
+                let texture = null;         let textureInitialized = false;
+
+        let syncTimeoutHandle = null;
+        let needsRedraw = false;
+
+                let sfxCtx = null;
+        function initAudioContext() {
+            if (!sfxCtx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) sfxCtx = new AudioCtx();
+            }
+            if (sfxCtx && sfxCtx.state === 'suspended') sfxCtx.resume();
+        }
+        let shotgunBuffer = null;
+        async function decodeShotgunSFX() {
+            if (shotgunBuffer || !sfxCtx) return;
+            try {
+                const response = await fetch(SHOTGUN_SFX_B64);
+                const arrayBuffer = await response.arrayBuffer();
+                shotgunBuffer = await sfxCtx.decodeAudioData(arrayBuffer);
+                console.log("Shotgun SFX decoded successfully");
+            } catch (e) {
+                console.error("Failed to decode shotgun SFX", e);
+            }
+        }
+        const SHOTGUN_SFX_B64 = "data:audio/wav;base64,UklGRjUrAABXQVZFZm10IBAAAAABAAEAIlYAACJWAAABAAgAZGF0YRErAAB/f4F+gH+EfoCCdX2IinmKgIGSgHyIgHSWbnJodHVndXCLl3ifn5Cwba6XlLeptnamk3uHtWVhrbtwbWFfa1XUiLKYvZZjpXB81GapweJutdK+y7GdTuKmhpKtc8BCslvTY2JqrG6Yl8H/rt1oibBKbU+I3vygm8bEtWdPV0OoY8B0k9/X0lCW7n9E5brxjutUi8pPu3/oReJLqnflkCXAK09qWxSmrx1scVIMtYJ6Tk95cpg1HrGXc1JSnDoRACKpnQliI0QtVUgMlY4Whh8AhXeASVqIK5tRKZcAAAAABlcAb4VAO1E+XAhUcTZCK3OAigZMb2cAlgBqKQA0AAGUlwgkFY84iyMAGxUqhQ8uRqIAbCQNGgB+rDoipngnHqcdTxATFA2Rb1RlShFJEhyonphSKbwdnM+gu12Tyq/XW1GfdHPidbpP3Z1Y5rPSd2n1f67D78HVUXvRqLV2+dj9h6rdgqKd4OKNoK5y7tT/3bx1ePzY7dR36ZWt1f/CqP+d/4GAlJCfnffcr3f/tLOJipq9/+Ha6ozZ4v+ZmtTis5eqybu54enqtpfIj4it/6HIe73u6u2Ym9Nltmm/dMxkdLWAxoOP0pWolsGkq3Wcx5Nfn1fARl9RmLRkr4W+VECel7mwSZhFcX6AHEOIh3tFgnAofjEqJBeWljCaIXFFF5N7gSUdQ4lyDIhDHmkHAIUgHUkAXiccMx9FCUJDMBgAVFlOAEtBZ0lQQRxYTAANCjBWWF8HUHcWVzUnfYANSTMoYGkMFWwNP3g6EGQXiUI4GmskfXN7NUtxc2hfcSM+U0CbKYyNPyxtRXVQP3p6Qq93iWuntKFKt61nrKKmWsbCvW+Uk29svV2ZobXGoH+61d2ccIVtz9OBr820dnq0n4yNkemNh4PUocblhtGq2If3rb/Xw4rJq8nm2qeKkuaaieDV37+bt5zRm/TO3a7r4cCwpKSVv7mIwpLY0K2voK7vgd+f4Ny4ya3iuKTS3eOesNp+0bGJfM19qofHzpOxs3C3v6C3pmyuglqTfntrkFN7fWF5eZegdoFuWXOTSmmlm3NWYZxRglt0e5BWfHhOS1qGTzszdHIiRFZuMFlae1B7JiU5c0ErZjtZOl0aSUIdIDAcT0c9ZEwpMSAsXyg0Qk0XKUw+Tj8PSlZOMC4SbzBSVjZUVGU8ME0mc1ZyP1J2Tko0PjIiZG1feXM1XUlgZVhyeFY/hIc/Y3eJe4qHYmdJTVOVlnmPmF2XgFVTTm6fd5Njj6uXp6uFcGaBf2O5mYRrs6GBn4CqwICdu5Chy7euj4WEfri1ntLGmZSLzLWzvt22186kk5jSpuCz2cS+yMDR4ea7opa6taPXydLWyN3Cod3H2qjXrK7Rsdi2rd2rp8zdtOHgyZTO183clcCf2qql1sauxrqnrq2au7fFuqW3wr+wwb2rq5iEjq6Uh56Vn4+jcXqncoVto21/npBdY5dug4h5ilN9iHdsYYuPd1JccXGFYWN3XkhQYEdBcEVYYUBaVDNWMkFuNz9TO2ZYXCtNbT9XZjIxVSxNLCVmM08zUixXWyBdIT9gSFZFSD8iUDRhYFZfMCNLWjEoWENVLic1ZzU6UUswRV1XZE5GYj00aERbTGFhWzxUZ3diX0REWFVKYERYWV1nWXFYgnqBXI2EeWNygV1/hoF4nGtzhZNmem2GcKaPmoWlp6aXgJmVhHuEk4erl5+UiqyHlbKVuKvBsby6ncalscK1wq+mtMiipM+jza/Sn6rQvaXP06+ey9LJq9KlstLW0rOu0tPVw8axp7jBttCu1Mq/waq2zcHAmpqww63CoJqhv568mL2TrMPFppWmjKqlt6eiq6WwmKGTgqyShpuFlqmDqnZ+nHl2h4KFiJKClmyBanuLcXODgpFqdI5nbXxaXn5kXFRgdmpdcWxNWVVHdWlVQ0lCXFNPRVlTWztIQTlOWE1lR0U/ND40Rj1XM18ySTZBWT40Q0I5OzFMV1NbTT43WjBdWUVbUlwwW0Q4S1pVP05KT1VeOD5OUl48Qlo/TkhbYlpdX1NlSWFpZk9ccnJVb2hTZldUWFZaV1tnfluEXXNeb2NrZX+EboqJaYKGdX+FhI+XmHWXioyamZqXj5yGg4WJoZWZlqOlpKGrpZekm6S4o7qio7G9sb6orbPAr5qptq+1v8W0q6yfu6aso6m5obi9uau6tqusu7eqsKm0rMjJsMivsL65vqrBuLvDwsC4pbHCpqqqsq+2rKKmsaacmaG5oKqyqK2nrZmxlJylma2Wio+HopyljYmai4mcj5OXf4F+gHR+g3iHgWyMbHx3cHiBhntud3R5eF57ZWtxcnR3d2dab3BrVFRwYmdtX01ZZUpaYVFTS2RlTGJjXl1ER1dfPl1ZT10/XFlOPko9SEw+UFBOS1o+Wks7RVM+SVNVVz5PO05JPVVYRFZYVl5PXVxVYFFLUUVQUWFYWlhYU19KUFRTUGJWYWRvWG5YYG5tdmptZXp6bmRlenVtf3N4g4OGdIh0hXWFeHiLioSHhY96j4KLmJGdhomWiZaKpI6VoZ+hjp+krJSWn5OhoqOrq7Gdr5+eprGxr6msqqawo6WxpKuqsaWqpb6uvLuxqbmspbS1rr2sprymu6XAuLe+qLKxrLKzt6yzpKK3tq23o7C4n62era+hqaqerKCgpJWcoKmhpp2qopanpZCbnJWLnpaGlYyUjoqMioV9jpN9jIx+gox5eH2FfIV9eHxrend9bn94Z2ZwaWJ0ZmxnYmhda1ldYGRrXWhbYGFlZmVUZVhPW1BbYlJJVGBfXFtcSk1KWVNYVUlKTFJVSEtFRVdDWFNKVUZQUVZGRFNJRU5ER0VMRUdMUlhbRk9NS1FYT19UW1NRU1NeVV5kXFlZU1NmX2FcZ2JuZ2ZmXHBwa3Rmc3JlaHRuanJ5an16gH19gICCc4V8fYV5f3uBiH+Hi4SIipCMlY6Xj5yXm5+UnKChn5GikaSjpZqdoqKinKmqn6qrq66voaejsa6tqqqiqKimtLKupranq7OypaWoqLemtLK0sayrq7avsKystLO2q6uzo7WtrqW0sKOvramfp56rpJygpqymoqiqnpicnJ+kmJ2Sm6GZnpCQlZKWmpOOmIuGioORjoyEioiCgoJ9h4GCh4KGgH14eH1zb3N0cnh0d3FybnN1b2RkZG5qcG1hbWhfZmhkZ1pgXGNbYldbWWFaVlBUWF1QV1VXWFlOWFJQWFZMTU9WTE1QVVBPVkxTT09SUk5RV1JOVFFLSlBQWVNOUE5aXFVQWlpSXVRUXV1SWF5fVFVcYVxYXV5bXGRea2Jpa2dmZ2ZrcGlqZmdyc255eG9tc3d6enZ+eHd9fHt7goV8g4SAiISGg4WDiIWLioiKjYyQmZqOlpWWnJySmJWUnpiao6CZnaWnoKKonqmenqChoaKqo66jpKWira2praWsqK2sp66pqqauqLGnpaewraulq66qrrCqrK+rq6+lpqysoaOnpqaiqaWgpaGipZympaGjnJmfoZmZnpSYm5icm5SOlpWYjZSSi42LkYaOiISGh4OFg4WIgoSCgX57eH59dnp1enNwcnJxeG5scHNvb2hwa2VnZmtnamdrYV9gYGdfXmFeYFpaWVdgVlZWVlVaXF1XW1dWVFFVWlFWUlJTUFlWWFJUUVJYVFZYT1dQUlZYVlBUVVVXWlZUVllaWVVbWV1VVlpdWl5fWFlgWV5dYmJgZ2NlZmNiaWZkbWxqaW1sbGhsa29ybG9udnh0e3R8end7dneAfX16fX6AgYaBgYmEhIqOjYaPjImOkY+Nko+OmJmWlJeZmpaXmpadnp+emZqdo6SknJ6ipZ+ln6GlqaigqKmqpKSlo6iqq6akp6unrKaspaSppKynp6uqpqilqauqpaempKSjpqOioaCfo6OfnqWlnZ6dpKGgmqCdnqCfmpucmZmXk5qTk5WRlpOTjpKTi5GOi4mKhYuLhoKJgIeFf31/f32Bfn55eXh1dXl6cnFzdXF0bnBzcGtsbW9rZ2hqbGVmZGpnY2ZkX2ZmY19cXF1cYmBbYVtfW1xaWVpaXFpXV1hWXFdaV1dWVFVUVFtTV1laVlRWVVRbV1hUV1tWWlhaWFpdWV1dWltZXFleYGBfX1xiX2JlZGVhZWRkZmhmaGVoa2xpam1wbnBscnB0dXZwcXJ5c3l2dnl9eXl6gYKCf32DhYCBhIKGhIuIiYuMjo6Qi46SkJGQkpCQkZKVlpWYlZeXl5uYm5yfn5+goZ2eop+hoKGho6CjoKaipqSjpaWopKijo6enpaSjqaSlqKeopaaoo6WopqKlpaakpaOio6SgoKGioKGio6GgnqCdn5ycmZ6amJqYm5qXl5mXlpaUlZKQjo2RjpCMi42LjYmIh4eJiIWCg4CEgIR9gH59f3p9eH18e3l3eXd0dHJ0cm9ucm5vcGpuamtsaWtpaWdmZ2VlY2djZmNgYl9fYV9gYGFgXGBgX1tcXltdXl5dXV1YWlpcV1dbW1lYWFpYWldYW1tZXF1bXFlbW11aWlpeWl1fW19fYGFeYWBfY2JiYmJkY2RmZWdnZmlnaWlobGpranBubW1wb3JwdHV1c3V1d3h5eHt6fX57fn19f36AgYSGhIOHiIWIh4uMi4qMjIyPjY6PkY+QkZKUlpWXmJWZmZmWm5mZmJyamp6bm5yfnKGeoaChoKGfoaKfo6GgpKCgoaKjoqWloaGkoqWioaGhoqOho6Sgo6Ojn5+jop+eoZ+foJ6enZ6dnZuampmbm5iXmJeVlpeWl5OUlJGRk5GQkJCNj4yNjouMiomHiYiIhoSGg4SCgIF/foCAfH57eXt4enp2dnd3dHV0cnJzcnBvb29sb2tramtsa2tqamZmZ2RmZWZmY2NjYmFjYWJfYF9fYF5eYF9cX1xdX15cXl5bXlxbXVxdXFtcXFtdW15cXltbW19eXF5eXWBdXl5iYWFiYmFhYWJjZGJlZGZnZmZnZ2hnaWlobGptbm1scG5vcHBxcXNzdXV1dnd2eHp5eXp6fH57fn9+foCBgIKEhISGhoaHiImJi4qKi42NjY2QkJCPkJGTkpOVlJaWlZeVlpiXl5mZmZmanJqanZ2bnp2dnp+foKCfn5+goZ+gn6Giop+goqCgn6GgoaGgop+hoKCfoJ+gn56fn6Ccn52dnJubm5ybmpuZmpqXlpaYl5aVlpSTlJSRk5KRj4+Ojo+MjoyLi4mKiIqIh4eGhYWDg4KDgX+AgH9/fX19fHt7e3h4eHh1dnZ0dXRzcXJxcW9vcG1ubGtqamppa2ppZ2dnZ2dmZWRlZGRlY2NiZGNhYGFgYGFhYGBgX2BeX19fXmBeXl9eXl5eXmBgYGBfX2BgX2BgX19gX2BhYWJhYWRjZGVkZWRlZmVlZWhmaGloaGtra2tsbG1sbW5wb29vcXJxc3RzdXV1d3d2eHh6enp8fHx9fn5/gYCCgoGCg4OEhYaIiIeIioqJiouLjY6Ojo6PkJCRkJGTkpSUlJSUlpaWmJaXmJiampqZmZuampucnZ2cnZ2dnJ2cnp2fnp6dnZ6fnZ2fnp6fn56enp6enZ2dnZ2enZ2bm5ubm5uam5qbm5mZmZeYmJeWlpeWlZOVlJSTk5GQkpGPjo6OjY2MjIqLiYmJiYiIh4WFhYSDgoOBgYGAf399fXx9e3t6eXp4eHh2d3V2dHNzcnNxcXFxcW9ubm1ubGxsa2tpaWpoaGhoaGdnZWdmZWZlZWVjY2NjYmNjYmNiYmJhYWFhYmFhYmFhYmFhYWBhYWBgYWFhYWJjYWNjY2RjY2NjZWRkZWVlZmZnZ2dnaGhoaWpqamxsbG1sbW5ubm9wcHFxcnNzc3R0dnV3d3d3eXh5e3t7fH1+fn9/f4CBgYKCgoSEhYWGh4eJiImJi4qKjIyNjI6Nj4+QkZGRkZKSk5STlJSUlZWVl5eYl5iYmZmZmZmampqampubm5ucnJucm5ucnJucnJycnZudm5ubnJycm5ubmpqbm5ubmpmampiZmZmXmJiXl5aWlpWVlZSUk5SSkpKRkJCQj4+Oj42NjIyMi4qKiomIiIeHhoaFhYOEg4OCgoCAf39+fX19fHt7e3p5eHh3d3d2dnV0dHNzcnJxcXBwcG5ubW1ubWxrbGtqamlqaWlpaGdoZ2dmZ2ZmZWVlZWVkZWVkY2RkY2NjZGNjY2NjYmNjY2NjY2NkY2RjY2RlZGRlZWVlZWVlZmZmZmdoaGhoaGhpaWpqamtsbG1tbm1ub29vcHFxcnJyc3NzdHV2dnZ3d3h5eXl6enx8fH19fn5/f4GAgYGDgoODhIWGhoaHh4iIioqKi4yMjIyNjo6Pj4+QkJGRkpKSk5KTk5SUlJWVlpaWl5eXmJeYmJiYmZiZmZmZmZqampmampqampqampqampqampmampqZmpmZmJmYmJiXmJeXlpeWlpaWlZWUlJSUk5OSkpGRkZCRkJCPjo6NjIyMjIuLi4qJiYiIh4aGhoWFhIODg4GCgICAf39+fX18fHx7enp5eXh4eHd3dnV1dHRzc3NycnFxcHBwb29ubm5tbGxsbGtra2pqaWppaGloaGdoaGdnZ2dnZmZmZmZmZWVlZmVlZWVlZWVlZWVlZWVmZWVlZWZmZmZmZmdnZ2hnaGhoaGlpaWppamtra2tsbGxtbW5ub29vb3BxcXFycnNzc3R0dXV2dnd3eHh5eXp6e3t8fH1+fn5/f4CBgYKCgoODhISFhoaHh4iIiYmJioqLi4yMjY2Njo6Pj4+QkJCRkZKSkpOTk5OUlJSVlZWVlpaWlpaWl5eXl5eYmJiXmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJeXl5eXlpaWlpWVlZWVlJSUlJSTk5KSkpKRkJCQj5CPjo6NjY2MjIyLi4qJiYmJiIeHh4aFhYSEhIODgoKBgYCAf39/fX19fHx7e3p6enl4eHd3dnZ2dXR0dHRzc3JycnFwcHBvb29vbm5tbWxsbGtra2trampqaWppaWhoaGhoaGhnaGdnZ2dnZ2dmZ2dmZ2dmZ2dnZ2dnZ2dnZ2doaGhoaGhpaWlpaWppampqa2trbGxsbW1tbW5ubm9vcHBwcXFycnJzc3R0dHV1dnZ3d3d4eXl5enp7e3x8fH1+fn9/f4CAgYKCg4ODhISFhYaGhoeHiIiJiYqKiouLi4yMjY2Ojo6Pj4+QkJCQkZGSkZKTkpOTk5SUlJSUlJWVlZWVlpaWlpaWlpaWl5eWl5aWl5aWl5eWlpaWlpaWlpWVlZWVlZSVlJSUlJOTk5OTkpKSkZGRkJCQkI+Pj46OjY2NjIyLi4uKiomJiIiIh4eGhoWFhYSEg4ODgoKBgYCAf39+fn19fHx8e3t6enl5eHh4d3d2dnV1dXR0c3NzcnJycXFxcHBvb29ubm5tbW1tbGxsbGtra2trampqampqamlpaWlpaWlpaWhoaWhoaGhoaGhoaGlpaWlpaWlpaWlpampqampqa2tra2xsbG1tbW1tbm5ub29vcHBwcXFxcnJyc3N0dHR1dXZ2dnd3eHh4eXl6ent7e3x8fX1+fn5/f4CBgYGCgoODg4SEhYWGhoaHh4iIiImJioqKi4uLjIyNjY2Njo6Pj4+PkJCQkJGRkZKSkpKTk5OTk5OTk5SUlJSUlJWVlJSVlZWVlZWVlZWVlZWVlZWVlZSUlJSUlJSTk5OTk5OSkpKSkZGRkZGQkJCPj4+Pjo6OjY2NjYyMi4uLioqJiYmIiIeHh4aGhoWFhISDg4OCgoGBgIB/f39+fn59fXx8e3t7enp5eXl4eHd3dnZ2dXV1dHR0c3NycnJxcXFxcHBvb29vbm5ubm5tbW1tbGxsbGxrbGtra2tra2pqampqampqampqampqampqampqampqa2tra2tra2tsbGxsbGxtbW1tbm5ubm9vb29vcHBwcXFxcnJyc3NzdHR0dXV2dnZ3d3d4eHh5eXp6ent7fHx8fX1+fn9/f4CAgYGBgoKDg4OEhIWFhYaGh4eHiIiIiYmKioqLi4uLjIyNjY2Njo6Oj4+Pj5CQkJCQkZGRkZGSkpKSkpKSkpOTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OSkpKSkpKSkZGRkZGRkJCQkI+Pj4+Ojo6NjY2NjYyMi4uLi4qKiYmJiYiIh4eGhoaGhYWEhISDg4KCgoGBgICAf39+fn59fXx8fHt7e3p6eXl5eHh3d3d2dnZ1dXV0dHRzc3NzcnJxcXFxcHBwcG9vb29ubm5ubm5tbW1tbW1tbGxsbGxsbGxsbGtra2tra2tra2tra2xsbGxsbGxsbGxsbG1tbW1tbW5ubm5ub29vb29wcHBxcXFxcnJyc3NzdHR0dHV1dXZ2dnd3d3h4eXl5enp6e3t7fHx9fX1+fn9/f4CAgIGBgoKCg4OEhISFhYWGhoaHh4eIiImJiYqKioqLi4uMjIyMjY2Njo6Ojo6Pj4+Pj5CQkJCQkJGRkZGRkZGRkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpGRkZGRkZGRkZCQkJCQkI+Pj4+Pj46Ojo6NjY2NjIyMi4uLi4qKiomJiYiIiIeHh4eGhoWFhYSEhIODgoKCgYGBgICAf39+fn59fX18fHt7e3p6enl5eXh4eHd3d3Z2dnV1dXV0dHRzc3NycnJycXFxcXBwcHBwb29vb29vbm5ubm5ubm5tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW1tbW5ubm5ubm5ub29vb29wcHBwcHFxcXFycnJyc3Nzc3R0dHV1dXV2dnZ3d3d4eHh5eXl6enp7e3t8fHx9fX5+fn9/f4CAgIGBgoKCgoODhISEhYWFhoaGh4eHiIiIiYmJiYqKioqLi4uMjIyMjI2NjY2Njo6Ojo6Pj4+Pj4+QkJCQkJCQkJCQkJCRkZGRkZGRkZGRkZGQkZCQkJCQkJCQkJCQj4+Pj4+Pj46Ojo6OjY2NjY2MjIyMi4uLi4qKioqJiYmIiIiIh4eHhoaGhYWFhISEg4ODgoKCgYGBgIB/f39+fn59fX18fHx7e3t6enp5eXl4eHh4d3d3dnZ2dXV1dXR0dHRzc3NzcnJycnFxcXFxcXBwcHBwcG9vb29vb29vb25ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm9vb29vb29vb3BwcHBwcHBxcXFxcXJycnJyc3Nzc3R0dHR1dXV2dnZ2d3d3eHh4eXl5eXp6ent7e3x8fH19fX5+fn9/f4CAgIGBgYKCgoODg4SEhIWFhYWGhoaHh4eIiIiIiYmJiYqKioqLi4uLjIyMjIyNjY2NjY2Ojo6Ojo6Ojo+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj46Ojo6Ojo6OjY2NjY2NjIyMjIyLi4uLi4qKioqJiYmJiIiIh4eHh4aGhoWFhYWEhISDg4OCgoKBgYGAgIB/f39+fn5+fX19fHx8e3t7enp6eXl5eXh4eHd3d3d2dnZ2dXV1dXR0dHRzc3Nzc3JycnJycnFxcXFxcXFwcHBwcHBwcHBwb29vb29vb29vb29vb29vb29vb29vcHBwcHBwcHBwcHFxcXFxcXFycnJycnNzc3NzdHR0dHR1dXV1dnZ2dnd3d3d4eHh5eXl6enp6e3t7fHx8fH19fX5+fn9/f4CAgIGBgYGCgoKDg4OEhISEhYWFhoaGhoeHh4eIiIiIiYmJiYqKioqKi4uLi4uMjIyMjIyNjY2NjY2NjY2Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo2NjY2NjY2NjIyMjIyMi4uLi4uLioqKioqJiYmJiIiIiIeHh4eGhoaGhYWFhISEhIODg4KCgoKBgYGAgIB/f39/fn5+fX19fHx8fHt7e3p6enp5eXl5eHh4d3d3d3d2dnZ2dXV1dXR0dHR0dHNzc3NzcnJycnJycnJxcXFxcXFxcXFxcXBwcHBwcHBwcHBwcHBwcHBwcHFxcXFxcXFxcXFxcXJycnJycnJzc3Nzc3N0dHR0dHV1dXV1dnZ2dnd3d3d4eHh4eXl5eXp6enp7e3t8fHx8fX19fn5+fn9/f4CAgICBgYGCgoKCg4ODhISEhIWFhYWGhoaGh4eHh4iIiIiIiYmJiYmKioqKiouLi4uLi4uMjIyMjIyMjIyNjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyMjIyMjIyMjIuLi4uLi4qKioqKiomJiYmJiIiIiIiHh4eHhoaGhoWFhYWEhISEg4ODgoKCgoGBgYGAgIB/f39/fn5+fX19fXx8fHx7e3t7enp6eXl5eXh4eHh4d3d3d3Z2dnZ2dXV1dXV0dHR0dHRzc3Nzc3Nzc3JycnJycnJycnJycnFxcXFxcXFxcXFxcXFxcXFxcXJycnJycnJycnJycnJzc3Nzc3NzdHR0dHR0dXV1dXV1dnZ2dnZ3d3d3eHh4eHl5eXl5enp6e3t7e3x8fHx9fX19fn5+fn9/f4CAgICBgYGBgoKCgoODg4OEhISEhYWFhYaGhoaHh4eHh4iIiIiIiYmJiYmJioqKioqKiouLi4uLi4uLi4yMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyLi4uLi4uLi4uKioqKioqKiYmJiYmIiIiIiIiHh4eHhoaGhoaFhYWFhISEhIODg4OCgoKCgYGBgYCAgIB/f39/fn5+fn19fX18fHx8e3t7e3p6enp5eXl5eHh4eHh3d3d3d3Z2dnZ2dnV1dXV1dXR0dHR0dHR0c3Nzc3Nzc3Nzc3NycnJycnJycnJycnJycnJycnJycnJyc3Nzc3Nzc3Nzc3NzdHR0dHR0dHR1dXV1dXV2dnZ2dnZ3d3d3d3h4eHh5eXl5eXp6enp7e3t7fHx8fH19fX19fn5+fn9/f4CAgICAgYGBgYKCgoKDg4ODhISEhIWFhYWFhoaGhoaHh4eHh4iIiIiIiImJiYmJiYmKioqKioqKioqLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLioqKioqKioqKiYmJiYmJiYiIiIiIiIeHh4eHh4aGhoaGhYWFhYWEhISEg4ODg4KCgoKCgYGBgYCAgIB/f39/fn5+fn19fX18fHx8fHt7e3t6enp6enl5eXl5eHh4eHh3d3d3d3Z2dnZ2dnZ1dXV1dXV1dXR0dHR0dHR0dHR0c3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N0dHR0dHR0dHR0dHR1dXV1dXV1dXZ2dnZ2dnd3d3d3d3h4eHh4eXl5eXl6enp6ent7e3t8fHx8fH19fX1+fn5+f39/f3+AgICAgYGBgYKCgoKCg4ODg4SEhISEhYWFhYWGhoaGhoaHh4eHh4eIiIiIiIiIiYmJiYmJiYmJioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKiYmJiYmJiYmJiIiIiIiIiIeHh4eHh4aGhoaGhYWFhYWFhISEhISDg4ODgoKCgoKBgYGBgICAgIB/f39/fn5+fn59fX19fHx8fHx7e3t7e3p6enp6eXl5eXl4eHh4eHh3d3d3d3d2dnZ2dnZ2dnV1dXV1dXV1dXV1dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dXV1dXV1dXV1dXZ2dnZ2dnZ2d3d3d3d3d3h4eHh4eHl5eXl5enp6enp7e3t7e3x8fHx8fX19fX1+fn5+f39/f3+AgICAgYGBgYGCgoKCgoODg4ODhISEhISFhYWFhYWGhoaGhoaHh4eHh4eHiIiIiIiIiIiIiYmJiYmJiYmJiYmJiYmKioqKioqKioqKioqKioqKioqKiYmJiYmJiYmJiYmJiYmJiIiIiIiIiIiHh4eHh4eHh4aGhoaGhoWFhYWFhYSEhISEg4ODg4OCgoKCgoGBgYGBgICAgIB/f39/fn5+fn59fX19fXx8fHx8e3t7e3t6enp6enp5eXl5eXl4eHh4eHh3d3d3d3d3d3Z2dnZ2dnZ2dnZ1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dnZ2dnZ2dnZ2dnd3d3d3d3d3eHh4eHh4eHl5eXl5eXp6enp6ent7e3t7fHx8fHx9fX19fX5+fn5+f39/f3+AgICAgIGBgYGBgoKCgoKDg4ODg4OEhISEhIWFhYWFhYWGhoaGhoaGh4eHh4eHh4eIiIiIiIiIiIiIiIiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiIiIiIiIiIiIiIh4eHh4eHh4eHhoaGhoaGhoWFhYWFhYSEhISEhIODg4ODg4KCgoKCgYGBgYGAgICAgH9/f39/f35+fn5+fX19fX18fHx8fHt7e3t7e3p6enp6enl5eXl5eXl4eHh4eHh4d3d3d3d3d3d3d3Z2dnZ2dnZ2dnZ2dnZ2dnZ2dXV1dXV1dXV1dXV1dXV1dnZ2dnZ2dnZ2dnZ2dnZ2dnZ3d3d3d3d3d3d4eHh4eHh4eHl5eXl5eXl6enp6enp7e3t7e3t8fHx8fH19fX19fX5+fn5+f39/f3+AgICAgICBgYGBgYKCgoKCgoODg4ODg4SEhISEhIWFhYWFhYWGhoaGhoaGhoeHh4eHh4eHh4eHiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiHh4eHh4eHh4eHh4aGhoaGhoaGhoWFhYWFhYWEhISEhISDg4ODg4OCgoKCgoKBgYGBgYGAgICAgH9/f39/f35+fn5+fX19fX19fHx8fHx8e3t7e3t7enp6enp6enl5eXl5eXl4eHh4eHh4eHh3d3d3d3d3d3d3d3d3dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ3d3d3d3d3d3d3d3d3eHh4eHh4eHh4eXl5eXl5eXl6enp6enp6e3t7e3t7fHx8fHx8fX19fX19fn5+fn5+f39/f3+AgICAgICBgYGBgYGCgoKCgoKDg4ODg4ODhISEhISEhIWFhYWFhYWFhoaGhoaGhoaGhoeHh4eHh4eHh4eHh4eHh4eHiIiIiIiIiIiIiIiIiIiIiIiHh4eHh4eHh4eHh4eHh4eHh4eGhoaGhoaGhoaGhYWFhYWFhYWEhISEhISEg4ODg4ODg4KCgoKCgoGBgYGBgYCAgICAgH9/f39/f35+fn5+fn19fX19fXx8fHx8fHt7e3t7e3t6enp6enp6enl5eXl5eXl5eHh4eHh4eHh4eHh4d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3eHh4eHh4eHh4eHh5eXl5eXl5eXl6enp6enp6ent7e3t7e3x8fHx8fHx9fX19fX1+fn5+fn5/f39/f39/gICAgICAgYGBgYGBgoKCgoKCgoODg4ODg4OEhISEhISEhIWFhYWFhYWFhYaGhoaGhoaGhoaGhoaHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHhoaGhoaGhoaGhoaGhoWFhYWFhYWFhYWEhISEhISEhIODg4ODg4OCgoKCgoKCgYGBgYGBgICAgICAgH9/f39/f35+fn5+fn59fX19fX18fHx8fHx8e3t7e3t7e3t6enp6enp6enl5eXl5eXl5eXl4eHh4eHh4eHh4eHh4eHh4d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d4eHh4eHh4eHh4eHh4eHh4eXl5eXl5eXl5eXl6enp6enp6ent7e3t7e3t7fHx8fHx8fH19fX19fX1+fn5+fn5/f39/f39/gICAgICAgYGBgYGBgYKCgoKCgoKCg4ODg4ODg4SEhISEhISEhIWFhYWFhYWFhYWFhYaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaFhYWFhYWFhYWFhYSEhISEhISEhIODg4ODg4ODgoKCgoKCgoKBgYGBgYGBgICAgICAgH9/f39/f35+fn5+fn59fX19fX19fHx8fHx8fHx7e3t7e3t7e3p6enp6enp6enp5eXl5eXl5eXl5eXl5eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eXl5eXl5eXl5eXl5eXp6enp6enp6ent7e3t7e3t7e3x8fHx8fHx8fX19fX19fX5+fn5+fn5/f39/f39/gICAgICAgIGBgYGBgYGBgoKCgoKCgoKDg4ODg4ODg4SEhISEhISEhISEhYWFhYWFhYWFhYWFhYWGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhYWFhYWFhYWFhYWFhYWFhISEhISEhISEhIODg4ODg4ODg4KCgoKCgoKCgYGBgYGBgYGAgICAgICAf39/f39/f39+fn5+fn5+fX19fX19fX18fHx8fHx8fHt7e3t7e3t7e3p6enp6enp6enp6enl5eXl5eXl5eXl5eXl5eXl5eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh5eXl5eXl5eXl5eXl5eXl5eXl6enp6enp6enp6ent7e3t7e3t7e3t8fHx8fHx8fH19fX19fX19fn5+fn5+fn5/f38=";
+        function playSfx(id) {
+            if (!sfxCtx) return;
+            const t = sfxCtx.currentTime;
+            const osc = sfxCtx.createOscillator();
+            const gain = sfxCtx.createGain();
+            osc.connect(gain);
+            gain.connect(sfxCtx.destination);
+
+            switch (id) {
+                case "EXPLOSION":
+                    const bufferSize = sfxCtx.sampleRate * 0.5;
+                    const buffer = sfxCtx.createBuffer(1, bufferSize, sfxCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    const noise = sfxCtx.createBufferSource();
+                    noise.buffer = buffer;
+                    const noiseGain = sfxCtx.createGain();
+                    noise.connect(noiseGain);
+                    noiseGain.connect(sfxCtx.destination);
+                    noiseGain.gain.setValueAtTime(0.5, t);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+                    noise.start();
+                    break;
+                case "LASER":
+                    osc.type = "square";
+                    osc.frequency.setValueAtTime(880, t);
+                    osc.frequency.exponentialRampToValueAtTime(110, t + 0.15);
+                    gain.gain.setValueAtTime(0.1, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                    osc.start();
+                    osc.stop(t + 0.2);
+                    break;
+                case "LEVELUP":
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(440, t);
+                    osc.frequency.setValueAtTime(880, t + 0.1);
+                    gain.gain.setValueAtTime(0.1, t);
+                    gain.gain.linearRampToValueAtTime(0, t + 0.5);
+                    osc.start();
+                    osc.stop(t + 0.5);
+                    break;
+                case "GAMEOVER":
+                    osc.type = "sawtooth";
+                    osc.frequency.setValueAtTime(110, t);
+                    osc.frequency.linearRampToValueAtTime(55, t + 0.5);
+                    gain.gain.setValueAtTime(0.2, t);
+                    gain.gain.linearRampToValueAtTime(0, t + 0.5);
+                    osc.start();
+                    osc.stop(t + 0.5);
+                    break;
+                case "SHOTGUN":
+                    if (!shotgunBuffer) {
+                        decodeShotgunSFX().then(() => playSfx("SHOTGUN"));
+                        break;
+                    }
+                    const source = sfxCtx.createBufferSource();
+                    source.buffer = shotgunBuffer;
+                    const shotGain = sfxCtx.createGain();
+                    shotGain.gain.setValueAtTime(2.0, t);                     source.connect(shotGain);
+                    shotGain.connect(sfxCtx.destination);
+                    source.start(t);
+                    break;
+                case "IMPACT":
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(440, t);
+                    osc.frequency.exponentialRampToValueAtTime(80, t + 0.1);
+                    gain.gain.setValueAtTime(0.05, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                    osc.start();
+                    osc.stop(t + 0.1);
+                    break;
+                case "DUCK_YELP":
+                                        osc.type = "sine";
+                    osc.frequency.setValueAtTime(880, t);
+                    osc.frequency.exponentialRampToValueAtTime(1200, t + 0.05);
+                    osc.frequency.exponentialRampToValueAtTime(880, t + 0.1);
+                    gain.gain.setValueAtTime(0.2, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                    osc.start();
+                    osc.stop(t + 0.1);
+                    break;
+            }
+        }
+
+                if (!gl) {
+            console.error("WebGL not supported!");
+            statusDiv.textContent = "Error: WebGL Not Supported";
+            statusDiv.style.color = "var(--error)";
+        }
+
+        const vsSrc = `attribute vec2 p; attribute vec2 t; varying vec2 vT; void main(){ gl_Position=vec4(p,0,1); vT=t; }`;
+        const fsSrc = `precision mediump float; uniform sampler2D uI; varying vec2 vT; void main(){ gl_FragColor=texture2D(uI, vT); }`;
+
+        function compile(src, type) {
+            const s = gl.createShader(type);
+            gl.shaderSource(s, src);
+            gl.compileShader(s);
+            if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error("Shader Error:", gl.getShaderInfoLog(s));
+            return s;
+        }
+
+        const prog = gl.createProgram();
+        gl.attachShader(prog, compile(vsSrc, gl.VERTEX_SHADER));
+        gl.attachShader(prog, compile(fsSrc, gl.FRAGMENT_SHADER));
+        gl.linkProgram(prog);
+        gl.useProgram(prog);
+
+        const vertBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1, 0, 1, 1, -1, 1, 1, -1, 1, 0, 0, 1, 1, 1, 0
+        ]), gl.STATIC_DRAW);
+
+        const pLoc = gl.getAttribLocation(prog, "p");
+        const tLoc = gl.getAttribLocation(prog, "t");
+
+        gl.enableVertexAttribArray(pLoc);
+        gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 16, 0);
+        gl.enableVertexAttribArray(tLoc);
+        gl.vertexAttribPointer(tLoc, 2, gl.FLOAT, false, 16, 8);
+
+        texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+                function updateCanvasSize() {
+            const dpr = window.devicePixelRatio || 1;
+            const displayWidth = frameContainer.clientWidth;
+            const displayHeight = frameContainer.clientHeight;
+
+            if (canvas.width !== Math.floor(displayWidth * dpr) || canvas.height !== Math.floor(displayHeight * dpr)) {
+                canvas.width = Math.floor(displayWidth * dpr);
+                canvas.height = Math.floor(displayHeight * dpr);
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                needsRedraw = true;
+            }
+        }
+        window.addEventListener('resize', updateCanvasSize);
+        updateCanvasSize();
+
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, DEFAULT_WIDTH, DEFAULT_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+                function renderLoop() {
+            if (needsRedraw) {
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                needsRedraw = false;
+                frameCount++;
+            }
+            requestAnimationFrame(renderLoop);
+        }
+        requestAnimationFrame(renderLoop);
+
+                const blob = new Blob([document.getElementById('decoder-worker').textContent], { type: 'text/javascript' });
+        videoWorker = new Worker(window.URL.createObjectURL(blob));
+
+        function finalizeInitialSync() {
+            if (!isInitialSync) return;
+            isInitialSync = false;
+            textureInitialized = true;
+            if (syncTimeoutHandle) clearTimeout(syncTimeoutHandle);
+
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);             
+                        const pixels8 = new Uint8Array(initialFrameBuffer.buffer);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 800, 600, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels8);
+
+            needsRedraw = true;
+            statusDiv.textContent = `Connected (800x600)`;
+            statusDiv.style.color = "var(--success)";
+        }
+
+        videoWorker.onmessage = (e) => {
+            const { runs, y, w, h, pixels, isFullFrame } = e.data;
+
+                        if (isInitialSync || !textureInitialized) {
+                isInitialSync = true; 
+                finalizeInitialSync();
+            }
+
+            if (textureInitialized) {
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+
+                if (runs) {
+                    for (const run of runs) {
+                        const pixels8 = new Uint8Array(run.pixels.buffer);
+                        gl.texSubImage2D(gl.TEXTURE_2D, 0, run.videoX, run.y, run.w, run.h, gl.RGBA, gl.UNSIGNED_BYTE, pixels8);
+                    }
+                    needsRedraw = true;
+                } else if (pixels) {
+                    const pixels8 = new Uint8Array(pixels.buffer);
+                    const drawX = (e.data.videoX !== undefined) ? e.data.videoX : 0;
+                    gl.texSubImage2D(gl.TEXTURE_2D, 0, drawX, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels8);
+                    needsRedraw = true;
+                }
+            }
+        };
+
+                function disconnectAudioThrottle() {
+            if (appendInterval) {
+                clearInterval(appendInterval);
+                appendInterval = null;
+            }
+        }
+
+        function connectAudio() {
+            isAudioStopped = false;
+            audioStreamActive = false;
+
+            if (USE_BLOB_AUDIO) {
+                                console.log('Initializing Blob Audio system (Firefox mode)');
+                blobAudioChunks = [];
+                blobPlaybackActive = true;
+                audioStreamActive = true;
+
+                disconnectAudioThrottle();
+                appendInterval = setInterval(processBlobAudioQueue, 100);
+                return;
+            }
+
+                        if (!window.MediaSource || !MIME_CODEC) return console.log("MSE not supported");
+
+                                    if (mediaSource) {
+                try {
+                    if (mediaSource.readyState === 'open') {
+                        mediaSource.endOfStream();
+                    }
+                } catch (e) {  }
+            }
+
+                        mediaSource = new MediaSource();
+            audioPlayer.src = URL.createObjectURL(mediaSource);
+
+            mediaSource.onsourceopen = () => {
+                try {
+                                        sourceBuffer = mediaSource.addSourceBuffer(MIME_CODEC);
+                    sourceBuffer.mode = 'sequence';
+                    sourceBuffer.onupdateend = () => {
+                                                if (audioPlayer.paused && !isAudioStopped && audioStreamActive) {
+                            const buffered = sourceBuffer.buffered;
+                            if (buffered.length > 0) {
+                                const bufferAhead = buffered.end(buffered.length - 1) - audioPlayer.currentTime;
+                                if (bufferAhead > MIN_BUFFER_TIME) {
+                                    audioPlayer.play().catch(e => console.log("Auto-play blocked:", e));
+                                }
+                            }
+                        }
+                    };
+
+                    disconnectAudioThrottle();
+                    appendInterval = setInterval(processAudioQueue, APPEND_THROTTLE_MS);
+                    audioStreamActive = true;
+                    console.log("Audio system initialized (MSE mode)");
+                } catch (e) {
+                    console.error("SourceBuffer creation failed", e);
+                }
+            };
+        }
+
+                        let blobChunks = [];
+        let currentBlobPlayer = null;
+        let nextBlobPlayer = null;         let isPlayingBlob = false;
+        const BLOB_INITIAL_THRESHOLD = 48000;         const BLOB_NEXT_THRESHOLD = 32000; 
+        function processBlobAudioQueue() {
+            if (!blobPlaybackActive || isAudioStopped) return;
+
+                        while (audioQueue.length > 0) {
+                blobChunks.push(audioQueue.shift());
+            }
+
+            const totalSize = blobChunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+
+                        if (!isPlayingBlob && totalSize > BLOB_INITIAL_THRESHOLD) {
+                startBlobPlayback();
+            }
+                        else if (isPlayingBlob && !nextBlobPlayer && totalSize > BLOB_NEXT_THRESHOLD) {
+                prepareNextBlobSegment();
+            }
+        }
+
+        function startBlobPlayback() {
+            if (blobChunks.length === 0) return;
+
+            const blob = new Blob(blobChunks, { type: 'audio/mpeg' });
+            blobChunks = []; 
+            const url = URL.createObjectURL(blob);
+            currentBlobPlayer = new Audio(url);
+            currentBlobPlayer.volume = 1.0;
+            isPlayingBlob = true;
+
+            currentBlobPlayer.onended = () => {
+                console.log('Blob segment ended');
+                URL.revokeObjectURL(url);
+
+                                if (nextBlobPlayer) {
+                    currentBlobPlayer = nextBlobPlayer;
+                    nextBlobPlayer = null;
+                    currentBlobPlayer.play().catch(e => console.log('Next segment play failed:', e));
+                } else {
+                    currentBlobPlayer = null;
+                    isPlayingBlob = false;
+                                        if (blobChunks.length > 0 || audioQueue.length > 0) {
+                        processBlobAudioQueue();
+                    }
+                }
+            };
+
+            currentBlobPlayer.onerror = (e) => {
+                console.error('Blob error:', e);
+                URL.revokeObjectURL(url);
+                currentBlobPlayer = null;
+                isPlayingBlob = false;
+            };
+
+            currentBlobPlayer.play().catch(e => {
+                console.log('Blob play blocked:', e);
+                isPlayingBlob = false;
+            });
+            console.log(`Playing blob (${(blob.size / 1024).toFixed(1)}KB)`);
+        }
+
+        function prepareNextBlobSegment() {
+            if (blobChunks.length === 0) return;
+
+            const blob = new Blob(blobChunks, { type: 'audio/mpeg' });
+            blobChunks = []; 
+            const url = URL.createObjectURL(blob);
+            nextBlobPlayer = new Audio(url);
+            nextBlobPlayer.volume = 1.0;
+
+                        nextBlobPlayer.load();
+
+            nextBlobPlayer.onended = () => {
+                URL.revokeObjectURL(url);
+                if (nextBlobPlayer === currentBlobPlayer) {
+                    currentBlobPlayer = null;
+                    isPlayingBlob = false;
+                }
+                nextBlobPlayer = null;
+                                if (blobChunks.length > 0 || audioQueue.length > 0) {
+                    processBlobAudioQueue();
+                }
+            };
+
+            console.log(`Pre-buffered next blob (${(blob.size / 1024).toFixed(1)}KB)`);
+        }
+
+        function processAudioQueue() {
+            if (!sourceBuffer || sourceBuffer.updating || isAudioStopped || !audioStreamActive) return;
+
+            const startTime = performance.now();
+            while (audioQueue.length > 0 && (performance.now() - startTime) < 10) {
+                try {
+                    if (sourceBuffer.updating) break;
+                    const audioData = audioQueue.shift();
+                    sourceBuffer.appendBuffer(audioData);
+                } catch (e) {
+                                        if (e.name === 'QuotaExceededError') {
+                        if (sourceBuffer && !sourceBuffer.updating && audioPlayer.currentTime > 5) {
+                            try {
+                                sourceBuffer.remove(0, audioPlayer.currentTime - 2);
+                            } catch (err) {
+                                console.log("Buffer removal failed:", err);
+                            }
+                        }
+                    } else {
+                        console.log("Audio append error:", e);
+                        break;
+                    }
+                }
+            }
+        }
+
+                function handleAudioStop() {
+            console.log("Stopping audio playback");
+            isAudioStopped = true;
+            audioStreamActive = false;
+            blobPlaybackActive = false;
+
+                        if (currentBlobPlayer) {
+                currentBlobPlayer.pause();
+                URL.revokeObjectURL(currentBlobPlayer.src);
+                currentBlobPlayer = null;
+            }
+            if (nextBlobPlayer) {
+                nextBlobPlayer.pause();
+                URL.revokeObjectURL(nextBlobPlayer.src);
+                nextBlobPlayer = null;
+            }
+            blobChunks = [];
+            isPlayingBlob = false;
+
+                        audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+
+                        audioQueue.length = 0;
+
+                        if (sourceBuffer && !sourceBuffer.updating) {
+                try {
+                    sourceBuffer.abort();
+                } catch (e) { }
+            }
+            disconnectAudioThrottle();
+        }
+
+        function handleAudioPause() {
+            console.log("Pausing audio playback");
+            audioPlayer.pause();
+        }
+
+        function handleAudioResume() {
+            console.log("Resuming audio playback");
+            isAudioStopped = false;
+            audioStreamActive = true;
+
+                        connectAudio();
+
+                        setTimeout(() => {
+                audioPlayer.play().catch(e => console.log("Playback resume blocked:", e));
+            }, 100);
+        }
+
+        function handleAudioNextTrack() {
+            console.log("Next track");
+            isAudioStopped = false;
+            audioStreamActive = true;
+            audioQueue.length = 0;
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            connectAudio();
+        }
+
+                function cleanupMP4Player() {
+            if (mp4VideoElement) {
+                mp4VideoElement.pause();
+                mp4VideoElement.src = '';
+                mp4VideoElement.remove();
+                mp4VideoElement = null;
+            }
+            if (mp4BlobUrl) {
+                URL.revokeObjectURL(mp4BlobUrl);
+                mp4BlobUrl = null;
+            }
+            const existing = document.getElementById('mp4Overlay');
+            if (existing) existing.remove();
+        }
+
+        function playMP4Blob() {
+            if (mp4Chunks.length === 0) {
+                console.error('No MP4 data received');
+                return;
+            }
+
+            cleanupMP4Player();
+
+                        const blob = new Blob(mp4Chunks, { type: 'video/mp4' });
+            mp4Chunks = [];             mp4BlobUrl = URL.createObjectURL(blob);
+            console.log(`MP4 Blob created: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+
+                        const container = document.getElementById('frameContainer');
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+            const scaleX = cw / frameWidth;
+            const scaleY = ch / frameHeight;
+
+                        const pad = 4;
+            const vidLeft = (mp4WindowRect.x + pad) * scaleX;
+            const vidTop = (mp4WindowRect.y + pad) * scaleY;
+            const vidWidth = (mp4WindowRect.w - pad * 2) * scaleX;
+            const vidHeight = (mp4WindowRect.h - pad * 2) * scaleY;
+
+                        const overlay = document.createElement('div');
+            overlay.id = 'mp4Overlay';
+            overlay.style.cssText = `
+                position: absolute;
+                left: ${vidLeft}px;
+                top: ${vidTop}px;
+                width: ${vidWidth}px;
+                height: ${vidHeight}px;
+                pointer-events: none;
+                z-index: 100;
+            `;
+
+                        mp4VideoElement = document.createElement('video');
+            mp4VideoElement.src = mp4BlobUrl;
+            mp4VideoElement.style.cssText = `
+                position: absolute;
+                left: 0; top: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                background: black;
+                pointer-events: auto;
+            `;
+            mp4VideoElement.volume = 1.0;
+            mp4VideoElement.playsInline = true;
+
+                        const controls = document.createElement('div');
+            controls.style.cssText = `
+                position: absolute;
+                bottom: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 8px;
+                padding: 8px 16px;
+                background: rgba(0, 0, 0, 0.75);
+                border-radius: 8px;
+                pointer-events: auto;
+                z-index: 101;
+            `;
+
+            const btnStyle = `
+                border: none;
+                color: white;
+                font-size: 16px;
+                padding: 8px 18px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+            `;
+
+                        const playBtn = document.createElement('button');
+            playBtn.textContent = '▶ Play';
+            playBtn.style.cssText = btnStyle + 'background: #2196F3;';
+            playBtn.onclick = () => {
+                mp4VideoElement.play().catch(e => console.log('Play blocked:', e));
+            };
+
+                        const pauseBtn = document.createElement('button');
+            pauseBtn.textContent = '⏸ Pause';
+            pauseBtn.style.cssText = btnStyle + 'background: #FF9800;';
+            pauseBtn.onclick = () => {
+                mp4VideoElement.pause();
+            };
+
+                        const stopBtn = document.createElement('button');
+            stopBtn.textContent = '⏹ Stop';
+            stopBtn.style.cssText = btnStyle + 'background: #F44336;';
+            stopBtn.onclick = () => {
+                cleanupMP4Player();
+            };
+
+            controls.appendChild(playBtn);
+            controls.appendChild(pauseBtn);
+            controls.appendChild(stopBtn);
+
+                        const progressRow = document.createElement('div');
+            progressRow.style.cssText = `
+                position: absolute;
+                bottom: 52px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 80%;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 4px 10px;
+                background: rgba(0, 0, 0, 0.7);
+                border-radius: 6px;
+                pointer-events: auto;
+                z-index: 101;
+            `;
+
+            const timeLabel = document.createElement('span');
+            timeLabel.style.cssText = 'color: white; font-size: 12px; font-family: monospace; min-width: 100px; text-align: center;';
+            timeLabel.textContent = '0:00 / 0:00';
+
+            const seekBar = document.createElement('div');
+            seekBar.style.cssText = 'flex:1; height:6px; background:#555; border-radius:3px; cursor:pointer; position:relative;';
+            const seekFill = document.createElement('div');
+            seekFill.style.cssText = 'height:100%; width:0%; background:#2196F3; border-radius:3px; transition:width 0.2s;';
+            seekBar.appendChild(seekFill);
+
+                        seekBar.onclick = (ev) => {
+                if (!mp4VideoElement || !mp4VideoElement.duration) return;
+                const rect = seekBar.getBoundingClientRect();
+                const pct = (ev.clientX - rect.left) / rect.width;
+                mp4VideoElement.currentTime = pct * mp4VideoElement.duration;
+            };
+
+            const fmtTime = (s) => {
+                const m = Math.floor(s / 60);
+                const sec = Math.floor(s % 60);
+                return m + ':' + (sec < 10 ? '0' : '') + sec;
+            };
+
+                        mp4VideoElement.ontimeupdate = () => {
+                const cur = mp4VideoElement.currentTime || 0;
+                const dur = mp4VideoElement.duration || 0;
+                if (dur > 0) {
+                    seekFill.style.width = ((cur / dur) * 100) + '%';
+                    timeLabel.textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
+                }
+            };
+
+            mp4VideoElement.onplay = () => {
+                console.log('MP4 playback started');
+                const pEl = document.getElementById('mp4Progress');
+                if (pEl) pEl.remove();
+            };
+
+            mp4VideoElement.onerror = (e) => {
+                const err = mp4VideoElement.error;
+                console.error("Video element error:", err);
+                statusDiv.textContent = "Video Error: " + (err ? err.message : "Unknown");
+                statusDiv.style.color = 'var(--error)';
+            };
+
+            progressRow.appendChild(seekBar);
+            progressRow.appendChild(timeLabel);
+
+            overlay.appendChild(mp4VideoElement);
+            overlay.appendChild(progressRow);
+            overlay.appendChild(controls);
+
+            if (!container) {
+                console.error("frameContainer not found for overlay!");
+                document.body.appendChild(overlay);
+            } else {
+                container.appendChild(overlay);
+            }
+
+                        mp4VideoElement.play().catch(e => {
+                console.log('Auto-play blocked, user must click Play:', e);
+            });
+
+                        mp4VideoElement.onended = () => {
+                console.log('MP4 playback finished');
+                cleanupMP4Player();
+            };
+
+                        const repositionOverlay = () => {
+                const cw = container.clientWidth;
+                const ch = container.clientHeight;
+                const sx = cw / frameWidth;
+                const sy = ch / frameHeight;
+                overlay.style.left = ((mp4WindowRect.x + pad) * sx) + 'px';
+                overlay.style.top = ((mp4WindowRect.y + pad) * sy) + 'px';
+                overlay.style.width = ((mp4WindowRect.w - pad * 2) * sx) + 'px';
+                overlay.style.height = ((mp4WindowRect.h - pad * 2) * sy) + 'px';
+            };
+            window.addEventListener('resize', repositionOverlay);
+            mp4VideoElement._resizeHandler = repositionOverlay;
+        }
+
+                let fpsInterval = setInterval(() => {
+            const now = performance.now();
+            fpsDisplay.textContent = `FPS: ${(frameCount / ((now - lastFpsTime) / 1000)).toFixed(1)}`;
+            frameCount = 0;
+            lastFpsTime = now;
+        }, 1000);
+
+                pingButton.onclick = () => {
+            const ip = ipInput.value.trim();
+            if (!ip) return;
+            statusDiv.textContent = `Pinging ${ip}...`;
+            statusDiv.style.color = '#ccc';
+
+            const startTime = performance.now();
+            const pingSocket = new WebSocket(`ws://${ip}:${WS_PORT_UI}/`);
+
+            pingSocket.onopen = () => {
+                const latency = (performance.now() - startTime).toFixed(1);
+                statusDiv.textContent = `Board Online. Latency: ${latency}ms`;
+                statusDiv.style.color = 'var(--success)';
+                pingSocket.close();
+            };
+
+            pingSocket.onerror = () => {
+                statusDiv.textContent = `Ping Failed.`;
+                statusDiv.style.color = 'var(--error)';
+            };
+        };
+
+                connectButton.onclick = () => {
+            if (uiSocket) {
+                if (uiSocket) uiSocket.close();
+                disconnectAudioThrottle();
+                handleAudioStop();                 uiSocket = null;
+                textureInitialized = false;
+                isInitialSync = false;
+                connectButton.textContent = "Connect";
+                connectButton.className = "connect";
+                statusDiv.textContent = "Disconnected";
+                statusDiv.style.color = "#888";
+                fullScreenBtn.disabled = true;
+                return;
+            }
+
+            const ip = ipInput.value.trim();
+            if (!ip) return;
+            localStorage.setItem('esp32_ip', ip);
+
+            initAudioContext();
+            decodeShotgunSFX();
+            connectAudio();
+
+            statusDiv.textContent = "Connecting...";
+            uiSocket = new WebSocket(`ws://${ip}:${WS_PORT_UI}/`);             uiSocket.binaryType = "arraybuffer";
+
+            uiSocket.onopen = () => {
+                statusDiv.textContent = "Connected (Syncing...)";
+                connectButton.textContent = "Disconnect";
+                connectButton.className = "disconnect";
+                fullScreenBtn.disabled = false;
+
+                isInitialSync = true;
+                receivedSlices.fill(false);
+                syncTimeoutHandle = setTimeout(finalizeInitialSync, 2000);
+            };
+
+            uiSocket.onmessage = (e) => {
+                if (e.data instanceof ArrayBuffer) {
+                    const data = e.data;
+                    const view = new DataView(data);
+                    const packetType = view.getUint8(0);
+
+                    if (packetType === PACKET_TYPE_AUDIO) {
+                                                                                                if (isAudioStopped) {
+                            console.log("Audio packet received while stopped. Auto-resuming...");
+                            handleAudioResume();
+                        }
+
+                                                if (audioStreamActive) {
+                            audioQueue.push(data.slice(1));
+                        }
+                    } else if (packetType === PACKET_TYPE_MP4_VIDEO) {
+                        const chunk = data.slice(1);
+                        mp4Chunks.push(chunk);
+                        mp4ReceivedSize += chunk.byteLength;
+
+                                                if (mp4VideoElement && mp4VideoElement._sb && !mp4VideoElement._sb.updating) {
+                            try {
+                                mp4VideoElement._sb.appendBuffer(chunk);
+                                                                if (mp4VideoElement.paused && mp4ReceivedSize > 512 * 1024) {
+                                    mp4VideoElement.play().catch(() => { });
+                                }
+                            } catch (e) {
+                                console.warn("MSE append failed, switching to buffer mode:", e);
+                                mp4VideoElement._sb = null;
+                            }
+                        }
+
+                                                const progressEl = document.getElementById('mp4Progress');
+                        if (progressEl && mp4ExpectedSize > 0) {
+                            const pct = Math.min(100, (mp4ReceivedSize / mp4ExpectedSize) * 100);
+                            const bar = progressEl.querySelector('.bar');
+                            const label = progressEl.querySelector('.label');
+                            if (bar) bar.style.width = pct + '%';
+                            if (label) {
+                                const receivedMB = (mp4ReceivedSize / 1024 / 1024).toFixed(1);
+                                const totalMB = (mp4ExpectedSize / 1024 / 1024).toFixed(1);
+                                label.textContent = (mp4VideoElement && mp4VideoElement._sb)
+                                    ? `Direct Stream: ${receivedMB}MB / ${totalMB}MB (${pct.toFixed(0)}%)`
+                                    : `Buffering: ${receivedMB}MB / ${totalMB}MB (${pct.toFixed(0)}%)`;
+                            }
+                        }
+                    } else if (packetType === PACKET_TYPE_AUDIO_STREAM) {
+                                                const pcmData = new Int16Array(data.slice(1));
+                        if (sfxCtx) {
+                            const buffer = sfxCtx.createBuffer(2, pcmData.length / 2, 44100);
+                            const left = buffer.getChannelData(0);
+                            const right = buffer.getChannelData(1);
+                            for (let i = 0; i < pcmData.length / 2; i++) {
+                                left[i] = pcmData[i * 2] / 32768;
+                                right[i] = pcmData[i * 2 + 1] / 32768;
+                            }
+                            const source = sfxCtx.createBufferSource();
+                            source.buffer = buffer;
+                            source.connect(sfxCtx.destination);
+                            source.start();
+                        }
+                    } else if (packetType === PACKET_TYPE_VIDEO || packetType === PACKET_TYPE_RAW8 || packetType === PACKET_TYPE_JPEG_VIDEO || packetType === 5 || packetType === PACKET_TYPE_SINGLE_RLE) {
+                                                const videoData = (packetType === PACKET_TYPE_JPEG_VIDEO || packetType === 5 || packetType === PACKET_TYPE_SINGLE_RLE) ? data : data.slice(1);
+                        videoWorker.postMessage({ buffer: videoData, type: packetType }, [videoData]);
+                    }
+                } else if (typeof e.data === 'string') {
+                    const cmd = e.data.trim();
+                    if (cmd.startsWith("SFX:")) {
+                        playSfx(cmd.substring(4));
+                    } else if (cmd === "AUDIO:STOP") {
+                        handleAudioStop();
+                    } else if (cmd === "AUDIO:PAUSE") {
+                        handleAudioPause();
+                    } else if (cmd === "AUDIO:RESUME") {
+                        handleAudioResume();
+                    } else if (cmd === "AUDIO:NEXT" || cmd === "AUDIO:NEXT_TRACK") {
+                        handleAudioNextTrack();
+                    } else if (cmd.startsWith("MP4:START:")) {
+                        console.log("Browser received MP4:START");
+                        const parts = cmd.substring(10).split(':');
+                        mp4ExpectedSize = parseInt(parts[0]) || 0;
+                        if (parts.length >= 5) {
+                            mp4WindowRect = {
+                                x: parseInt(parts[1]) || 0, y: parseInt(parts[2]) || 0,
+                                w: parseInt(parts[3]) || 320, h: parseInt(parts[4]) || 240
+                            };
+                        }
+                        mp4ReceivedSize = 0;
+                        mp4Chunks = [];
+                        cleanupMP4Player();
+
+                        if (window.MediaSource) {
+                            const ms = new MediaSource();
+                            mp4VideoElement = document.createElement('video');
+                            mp4VideoElement.style.cssText = `width:100%; height:100%; object-fit:contain; background:black;`;
+                            mp4VideoElement.playsInline = true;
+                            mp4VideoElement.onplaying = () => {
+                                const pEl = document.getElementById('mp4Progress');
+                                if (pEl) {
+                                    pEl.style.opacity = '0';
+                                    setTimeout(() => { if (pEl) pEl.remove(); }, 500);
+                                }
+                            };
+                            mp4VideoElement._ms = ms;
+                            mp4VideoElement.src = URL.createObjectURL(ms);
+                            ms.addEventListener('sourceopen', () => {
+                                try {
+                                    const sb = ms.addSourceBuffer('video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
+                                    sb.mode = 'sequence';
+                                    mp4VideoElement._sb = sb;
+                                } catch (e) { console.error("MSE error:", e); }
+                            });
+                        }
+
+                        const container = document.getElementById('frameContainer');
+                        if (!container) return;
+                                                const sX = container.clientWidth / (frameWidth || 800);
+                        const sY = container.clientHeight / (frameHeight || 600);
+
+                        const pDiv = document.createElement('div');
+                        pDiv.id = 'mp4Progress';
+                        pDiv.style.cssText = `
+                            position:absolute; left:${mp4WindowRect.x * sX}px; top:${mp4WindowRect.y * sY}px;
+                            width:${mp4WindowRect.w * sX}px; height:${mp4WindowRect.h * sY}px;
+                            background:rgba(0,0,0,0.85); display:flex; flex-direction:column;
+                            align-items:center; justify-content:center; z-index:200; color:white;
+                            transition: opacity 0.5s; font-family: sans-serif;
+                        `;
+                        pDiv.innerHTML = `
+                            <div style="font-size:16px; font-weight:bold; margin-bottom:12px;" class="label">Initializing...</div>
+                            <div style="width:70%; height:6px; background:#222; border-radius:3px; overflow:hidden; border:1px solid #444">
+                                <div class="bar" style="height:100%; width:0%; background:#2196F3; transition:width 0.2s"></div>
+                            </div>
+                        `;
+                        container.appendChild(pDiv);
+
+                                                const overlay = document.createElement('div');
+                        overlay.id = 'mp4Overlay';
+                        overlay.style.cssText = `
+                            position:absolute; left:${mp4WindowRect.x * sX}px; top:${mp4WindowRect.y * sY}px;
+                            width:${mp4WindowRect.w * sX}px; height:${mp4WindowRect.h * sY}px;
+                            background:black; z-index:100; pointer-events:none; border: 1px solid #444; border-radius:4px;
+                        `;
+                        if (!mp4VideoElement) mp4VideoElement = document.createElement('video');
+                        mp4VideoElement.style.cssText = `width:100%; height:100%; object-fit:contain;`;
+                        overlay.appendChild(mp4VideoElement);
+                        container.appendChild(overlay);
+
+                        console.log(`MP4 Pipeline ready: ${(mp4ExpectedSize / 1024 / 1024).toFixed(1)}MB`);
+                    } else if (cmd.startsWith("MP4:END")) {
+                        console.log("Browser received MP4:END. Accumulated: " + mp4Chunks.length + " chunks");
+                                                if (mp4VideoElement && mp4VideoElement._ms && mp4VideoElement._ms.readyState === 'open') {
+                            try { if (!mp4VideoElement._sb.updating) mp4VideoElement._ms.endOfStream(); } catch (e) { }
+                        }
+                                                if (mp4VideoElement && (mp4VideoElement.paused || mp4VideoElement.currentTime === 0)) {
+                            console.log("Progressive playback didn't start. Falling back to full Blob playback.");
+                            const blob = new Blob(mp4Chunks, { type: 'video/mp4' });
+                            mp4BlobUrl = URL.createObjectURL(blob);
+                            mp4VideoElement.src = mp4BlobUrl;
+                            mp4VideoElement.play().catch(e => console.log('Auto-play blocked:', e));
+                        }
+                        const pEl = document.getElementById('mp4Progress');
+                        if (pEl) setTimeout(() => { if (pEl) pEl.style.opacity = '0'; }, 1000);
+                        console.log(`MP4 transfer complete: ${(mp4ReceivedSize / 1024 / 1024).toFixed(1)}MB received`);
+                    } else if (cmd.startsWith("MP4:MOVE:")) {
+                        const parts = cmd.substring(9).split(':');
+                        if (parts.length >= 4) {
+                            mp4WindowRect = {
+                                x: parseInt(parts[0]), y: parseInt(parts[1]),
+                                w: parseInt(parts[2]), h: parseInt(parts[3])
+                            };
+                            const container = document.getElementById('frameContainer');
+                            const sx = container.clientWidth / (frameWidth || 800);
+                            const sy = container.clientHeight / (frameHeight || 600);
+                            const overlay = document.getElementById('mp4Overlay');
+                            if (overlay) {
+                                overlay.style.left = (mp4WindowRect.x * sx) + 'px';
+                                overlay.style.top = (mp4WindowRect.y * sy) + 'px';
+                                overlay.style.width = (mp4WindowRect.w * sx) + 'px';
+                                overlay.style.height = (mp4WindowRect.h * sy) + 'px';
+                            }
+                            const prog = document.getElementById('mp4Progress');
+                            if (prog) {
+                                prog.style.left = (mp4WindowRect.x * sx) + 'px';
+                                prog.style.top = (mp4WindowRect.y * sy) + 'px';
+                                prog.style.width = (mp4WindowRect.w * sx) + 'px';
+                                prog.style.height = (mp4WindowRect.h * sy) + 'px';
+                            }
+                        }
+                    } else if (cmd === "MP4:PLAY") {
+                        console.log("Remote PLAY command received");
+                        if (mp4VideoElement) mp4VideoElement.play().catch(e => console.log('Remote play blocked:', e));
+                    } else if (cmd === "MP4:PAUSE") {
+                        console.log("Remote PAUSE command received");
+                        if (mp4VideoElement) mp4VideoElement.pause();
+                    } else if (cmd === "MP4:STOP" || cmd === "MP4:CLOSE" || cmd === "MP4:HIDE") {
+                        console.log(`Remote ${cmd} command received`);
+                        cleanupMP4Player();
+                    }
+                                        else if (cmd.startsWith("YT:PLAY:")) {
+                        const parts = cmd.substring(8).split(':');
+                        let url = parts[0];
+                        if (parts.length > 5) {
+                            url = parts.slice(0, parts.length - 4).join(':');
+                        }
+
+                        const rectParts = parts.slice(-4);
+                        ytWindowRect = {
+                            x: parseInt(rectParts[0]) || 0, y: parseInt(rectParts[1]) || 0,
+                            w: parseInt(rectParts[2]) || 336, h: parseInt(rectParts[3]) || 200
+                        };
+
+                        currentSiteType = detectSiteType(url);
+                        console.log('WebPlayer Navigating to: ' + url + ' (type: ' + currentSiteType + ')', ytWindowRect);
+                        cleanupYTPlayer();
+                        currentSiteType = detectSiteType(url); 
+                        const container = document.getElementById('frameContainer');
+                        if (!container) {
+                            console.error('CRITICAL: frameContainer not found!');
+                            return;
+                        }
+
+                        const sx = container.clientWidth / (frameWidth || 800);
+                        const sy = container.clientHeight / (frameHeight || 600);
+
+                        ytOverlay = document.createElement('div');
+                        ytOverlay.id = 'ytOverlay';
+                        ytOverlay.style.cssText = `
+                            position: absolute;
+                            left: ${ytWindowRect.x * sx}px;
+                            top: ${ytWindowRect.y * sy}px;
+                            width: ${ytWindowRect.w * sx}px;
+                            height: ${ytWindowRect.h * sy}px;
+                            z-index: 2000;
+                            background: black;
+                            border: 1px solid #333;
+                            border-radius: 4px;
+                            overflow: hidden;
+                            pointer-events: auto;
+                        `;
+
+                        ytIframe = document.createElement('iframe');
+                        ytIframe.id = 'browserIframe';
+                        ytIframe.style.cssText = 'width:100%; height:100%; border:none;';
+                        ytIframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                        ytIframe.allowFullscreen = true;
+                        ytIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-presentation');
+
+                        const finalUrl = convertToEmbedUrl(url);
+                        console.log('Final Iframe URL:', finalUrl);
+                        ytIframe.src = finalUrl;
+
+                        ytOverlay.appendChild(ytIframe);
+                        container.appendChild(ytOverlay);
+
+                    } else if (cmd === "YT:PAUSE") {
+                        console.log('WebPlayer PAUSE (site: ' + currentSiteType + ')');
+                        if (ytIframe && ytIframe.contentWindow) {
+                            if (currentSiteType === 'youtube') {
+                                ytIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                            } else {
+                                                                try {
+                                    ytIframe.contentWindow.postMessage({ action: 'pause' }, '*');
+                                } catch (e) { console.log('Cross-origin pause blocked, expected for: ' + currentSiteType); }
+                            }
+                        }
+                    } else if (cmd === "YT:RESUME") {
+                        console.log('WebPlayer RESUME (site: ' + currentSiteType + ')');
+                        if (ytIframe && ytIframe.contentWindow) {
+                            if (currentSiteType === 'youtube') {
+                                ytIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                            } else {
+                                try {
+                                    ytIframe.contentWindow.postMessage({ action: 'play' }, '*');
+                                } catch (e) { console.log('Cross-origin resume blocked, expected for: ' + currentSiteType); }
+                            }
+                        }
+                    } else if (cmd === "YT:STOP") {
+                        console.log('WebPlayer STOP');
+                        cleanupYTPlayer();
+                    } else if (cmd.startsWith("YT:MOVE:")) {
+                        const parts = cmd.substring(8).split(':');
+                        if (parts.length >= 4) {
+                            ytWindowRect = {
+                                x: parseInt(parts[0]), y: parseInt(parts[1]),
+                                w: parseInt(parts[2]), h: parseInt(parts[3])
+                            };
+                            const container = document.getElementById('frameContainer');
+                            if (container && ytOverlay) {
+                                const sx = container.clientWidth / (frameWidth || 800);
+                                const sy = container.clientHeight / (frameHeight || 600);
+                                ytOverlay.style.left = (ytWindowRect.x * sx) + 'px';
+                                ytOverlay.style.top = (ytWindowRect.y * sy) + 'px';
+                                ytOverlay.style.width = (ytWindowRect.w * sx) + 'px';
+                                ytOverlay.style.height = (ytWindowRect.h * sy) + 'px';
+                            }
+                        }
+                    }
+                }
+            };
+
+            uiSocket.onclose = () => {
+                connectButton.textContent = "Connect";
+                connectButton.className = "connect";
+                statusDiv.textContent = "Connection Lost";
+                statusDiv.style.color = "var(--error)";
+                uiSocket = null;
+                disconnectAudioThrottle();
+                handleAudioStop();                 textureInitialized = false;
+            };
+
+            uiSocket.onerror = (error) => {
+                console.error("WS Error", error);
+                if (uiSocket) uiSocket.close();
+            };
+        };
+
+                        const SPECIAL_KEYS = {
+            "ArrowUp": "ArrowUp", "ArrowDown": "ArrowDown", "ArrowLeft": "ArrowLeft", "ArrowRight": "ArrowRight",
+            "Enter": "Enter", "Space": "Space", "Escape": "Esc", "Backspace": "Backspace", "Tab": "Tab",
+            "ShiftLeft": "Shift", "ShiftRight": "Shift", "ControlLeft": "Ctrl", "ControlRight": "Ctrl"
+        };
+
+        function sendInput(msg) {
+            console.log("WS Sending:", msg);
+            if (uiSocket && uiSocket.readyState === WebSocket.OPEN) uiSocket.send(msg);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!uiSocket || e.repeat) return;
+            let k = SPECIAL_KEYS[e.code] || SPECIAL_KEYS[e.key] || (e.key.length === 1 ? e.key : null);
+
+            if (k) {
+                                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(k)) {
+                    e.preventDefault();
+                }
+
+                sendInput(k.length === 1 ? `keyb:char:${k}` : `keyb:key:${k}`);
+            }
+        });
+
+        const frameEl = document.getElementById('frameContainer');
+        frameEl.onmousedown = (e) => sendMouse('down', e);
+        frameEl.onmouseup = (e) => sendMouse('up', e);
+        frameEl.onmousemove = (e) => sendMouse('move', e);
+
+                frameEl.addEventListener('wheel', (e) => handleMouseWheel(e), { passive: false });
+
+        let lastMouseTime = 0;
+        function sendMouse(type, e) {
+            const now = performance.now();
+            if (type === 'move' && (now - lastMouseTime < MOUSE_THROTTLE_MS)) return;
+            if (type === 'move') lastMouseTime = now;
+
+            const r = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - r.left) * (frameWidth / r.width));
+            const y = Math.floor((e.clientY - r.top) * (frameHeight / r.height));
+
+            let mval = e.buttons !== undefined ? e.buttons : 0;
+            if (type === 'wheel') mval = e.deltaY > 0 ? 1 : -1;
+
+            if (x >= 0 && x < frameWidth && y >= 0 && y < frameHeight) {
+                sendInput(`mouse:${type}:${x},${y}:${mval}`);
+            }
+        }
+
+                function handleMouseWheel(e) {
+            e.preventDefault(); 
+            const now = performance.now();
+            if (now - lastWheelSendTime < WHEEL_THROTTLE_MS) return;
+            lastWheelSendTime = now;
+
+            const r = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - r.left) * (frameWidth / r.width));
+            const y = Math.floor((e.clientY - r.top) * (frameHeight / r.height));
+
+                                                let delta = 0;
+
+            if (e.deltaMode === 0) {
+                                delta = Math.sign(e.deltaY) * -1;             } else if (e.deltaMode === 1) {
+                                delta = Math.sign(e.deltaY) * -1;
+            } else {
+                                delta = Math.sign(e.deltaY) * -3;
+            }
+
+                        delta = Math.max(-3, Math.min(3, delta));
+
+                        if (x >= 0 && x < frameWidth && y >= 0 && y < frameHeight) {
+                                sendInput(`wheel:${x},${y},${delta}`);
+            }
+        }
+
+        fullScreenBtn.onclick = () => {
+            if (!document.fullscreenElement) frameEl.requestFullscreen();
+            else document.exitFullscreen();
+        };
+
+        document.addEventListener('fullscreenchange', () => {
+            document.body.classList.toggle('fullscreen-mode', !!document.fullscreenElement);
+        });
+
+        const saved = localStorage.getItem('esp32_ip');
+        if (saved) ipInput.value = saved;
+
+    </script>
+</body>
+
+</html>
