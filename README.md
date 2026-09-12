@@ -1,4 +1,5 @@
 This is the Official Project Blue repo for the Milk-V Duo S.
+**Created by Julian DeVante Feb 2026 **
 
 YouTube Video: https://www.youtube.com/watch?v=wLz_8ZoN-vs
 
