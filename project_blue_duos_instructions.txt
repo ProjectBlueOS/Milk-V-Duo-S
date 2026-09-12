@@ -1,0 +1,68 @@
+# Instructions for Decompressing and Writing the Project Blue Image to an SD Card
+
+## Overview
+This document provides step-by-step instructions for decompressing (`.img.gz`) and flashing the **Project Blue (Alpha V1.1)** system image (`sdcard_PB_AlphaV1_1_MilkVDuoS.img.gz`) to a microSD card for the **Milk-V Duo S** development board.
+
+---
+
+## Prerequisites
+1. **MicroSD Card**: A Class 10 / UHS-I microSD card (minimum 8GB recommended).
+2. **Card Reader**: A USB microSD card reader to connect the card to your computer.
+3. **Software**:
+   - **Decompression tool**: Built-in archive utility (macOS/Linux) or 7-Zip / WinRAR (Windows).
+   - **Flashing tool**: **BalenaEtcher** (Recommended, cross-platform) or **Rufus** (Windows).
+
+---
+
+## Step 1: Download the Image
+Ensure you have downloaded the compressed image file:
+`sdcard_PB_AlphaV1_1_MilkVDuoS.img.gz`
+
+---
+
+## Step 2: Decompress the `.gz` File
+The image is compressed in GZIP format and must be extracted to reveal the raw `.img` file before flashing.
+
+### On Windows:
+1. Download and install [7-Zip](https://www.seven-zip.org/) if you haven't already.
+2. Right-click `sdcard_PB_AlphaV1_1_MilkVDuoS.img.gz`.
+3. Select **7-Zip** -> **Extract Here** (or use WinRAR).
+4. You will get the uncompressed file: `sdcard_PB_AlphaV1_1_MilkVDuoS.img`.
+
+### On macOS / Linux:
+1. Open your terminal app.
+2. Navigate to the folder where the file is downloaded (e.g., `cd ~/Downloads`).
+3. Run the following command to decompress:
+   ```bash
+   gunzip sdcard_PB_AlphaV1_1_MilkVDuoS.img.gz
+   ```
+4. This will produce the raw image file: `sdcard_PB_AlphaV1_1_MilkVDuoS.img`.
+
+---
+
+## Step 3: Flash the Image to the SD Card
+
+> **WARNING:** Flashing an image will overwrite all existing data on your microSD card. Make sure to back up any important files before proceeding.
+
+### Using BalenaEtcher (Recommended for Windows / macOS / Linux):
+1. Download, install, and open [BalenaEtcher](https://etcher.balena.io/).
+2. Insert your microSD card into your computer using the card reader.
+3. Click **Flash from file** in BalenaEtcher and select the extracted `sdcard_PB_AlphaV1_1_MilkVDuoS.img` file.
+4. Click **Select target** and choose your microSD card (verify the drive size carefully to avoid overwriting your main hard drive).
+5. Click **Flash!** and wait for the process to complete and validate.
+
+### Using Rufus (Windows Alternative):
+1. Download and open [Rufus](https://rufus.ie/).
+2. Insert your microSD card.
+3. Under **Device**, select your microSD card.
+4. Under **Boot selection**, click **SELECT** and choose the extracted `sdcard_PB_AlphaV1_1_MilkVDuoS.img` file.
+5. Leave other settings at their defaults and click **START**.
+6. Acknowledge any warning prompts about data erasure and wait for completion.
+
+---
+
+## Step 4: First Boot on Milk-V Duo S
+1. Safely eject the microSD card from your computer and unplug the card reader.
+2. Insert the microSD card into the TF/MicroSD slot on your **Milk-V Duo S** board.
+3. Connect power to the Milk-V Duo S.
+4. The system will boot into Project Blue.
