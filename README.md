@@ -19,4 +19,11 @@ This .img file is the SD Card image for Project Blue. Alpha Release Version 1.1
 * * I did not have a Wifi board for development so this is a NON-WIFI build
  
   * Report any issues to me DeVante.julian@gmail.com - Enjoy!
+ 
+  ***Just added Alpha V1.2***
+  Project Blue for the Milk V Duo S  (Aplha V1.2)
+  This is the actual Project Blue bin to be placed on the SD card in the rootfs (in root)
+  Replace the V1.1 project_blue_linux bin in the rootfs root die with this one and reboot the board 
+
+  to unzip this file use command: xz -d project_blue_linux.xz
 
