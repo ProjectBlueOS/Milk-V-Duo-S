@@ -1,0 +1,54 @@
+Project Blue - Milk-V Duo S SD Card Flashing Guide
+================================================
+
+You need: a microSD card (8 GB or larger) + card reader,
+and the image file: duo-s-dist.img.xz (286 MB)
+
+------------------------------------------------
+WINDOWS (Balena Etcher - easiest, no extract needed)
+------------------------------------------------
+1. Install Balena Etcher: https://etcher.balena.io
+2. Open Etcher -> "Flash from file" -> select duo-s-dist.img.xz
+3. "Select target" -> your SD card (CHECK the drive letter!)
+4. Click "Flash!" and wait for validation.
+5. Eject, put the card in the Duo S (powered off), power on.
+
+------------------------------------------------
+WINDOWS (Raspberry Pi Imager)
+------------------------------------------------
+1. Install Raspberry Pi Imager: https://www.raspberrypi.com/software
+2. "Choose OS" -> "Use custom" -> select duo-s-dist.img.xz
+3. "Choose Storage" -> your SD card.
+4. Click "Write". Eject, insert into Duo S, power on.
+
+------------------------------------------------
+LINUX (terminal)
+------------------------------------------------
+1. Find your card (CHECK carefully - wrong disk = data loss):
+     lsblk
+   (look for the ~size of your SD card, e.g. /dev/sdb)
+
+2. Unmount it if auto-mounted:
+     sudo umount /dev/sdX*
+
+3. Decompress + write in one step (replace sdX):
+     xz -dc duo-s-dist.img.xz | sudo dd of=/dev/sdX bs=4M status=progress oflag=sync
+
+4. Eject safely:
+     sudo eject /dev/sdX
+
+5. Put the card in the Duo S (powered off), power on.
+
+------------------------------------------------
+FIRST BOOT (all users)
+------------------------------------------------
+- The image is ~850 MB and fits any card 1 GB+.
+- On first boot the system automatically expands to fill
+  your whole SD card (takes about a minute). Just wait.
+- Then connect: browser to http://192.168.42.1:8081
+  (via the board's USB network), or as you normally do.
+
+TROUBLESHOOTING
+- Card not booting? Re-flash and let validation finish.
+- "No space" errors? You flashed the .img, use a bigger card.
+- Keep a backup of duo-s-dist.img.xz before writing.
