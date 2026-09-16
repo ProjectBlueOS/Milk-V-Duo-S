@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Project Blue - Ultimate Client (Milk-V Duo S)</title>
+    <title>Project Blue - Ultimate Client</title>
     <meta charset="utf-8">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <style>
@@ -159,6 +159,7 @@
             text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
         }
 
+        /* Fullscreen overrides */
         body.fullscreen-mode .control-panel,
         body.fullscreen-mode .status-bar,
         body.fullscreen-mode h2,
@@ -209,10 +210,11 @@
 </head>
 
 <body>
-    <h2>Project Blue Control Station (Milk-V Duo S)</h2>
+    <h2>Project Blue Control Station</h2>
 
     <div class="control-panel">
-        <input type="text" id="ipAddressInput" placeholder="ESP32 IP Address" value="192.168.1.10">
+        <input type="text" id="ipAddressInput" placeholder="Board IP Address" value="192.168.42.1">
+
         <button id="connectButton" class="connect">Connect</button>
         <button id="pingButton" class="ping">Ping Board</button>
         <button id="fullscreenButton" class="fullscreen" disabled>Full Screen</button>
@@ -234,15 +236,19 @@
         </div>
     </div>
 
+    <!-- Hidden Audio Player for Streaming Music -->
     <audio id="audioPlayer" class="audio-hidden"></audio>
 
+
+    <!-- VIDEO DECODER WORKER -->
     <script id="decoder-worker" type="javascript/worker">
         const worker_lut = new Uint32Array(256);
         for (let i = 0; i < 256; i++) {
             const r3 = (i >> 5) & 0x07;
             const g3 = (i >> 2) & 0x07;
             const b2 = i & 0x03;
-                        const r8 = (r3 << 5) | (r3 << 2) | (r3 >> 1);
+            // Precise expansion from 3/3/2 to 8/8/8 (RGBA Little Endian)
+            const r8 = (r3 << 5) | (r3 << 2) | (r3 >> 1);
             const g8 = (g3 << 5) | (g3 << 2) | (g3 >> 1);
             const b8 = (b2 << 6) | (b2 << 4) | (b2 << 2) | b2;
             worker_lut[i] = r8 | (g8 << 8) | (b8 << 16) | (255 << 24);
@@ -257,23 +263,24 @@
                 const type = e.data.type || 0x02;
                 if (!ab) return;
 
-                if (type === 0x04) {                     if (ab.byteLength < 9) return;
+                if (type === 0x04) { // JPEG FRAME (New optimized video path)
+                    if (ab.byteLength < 9) return;
                     const headerView = new DataView(ab, 1, 8);
                     const winX = headerView.getUint16(0, true);
                     const winY = headerView.getUint16(2, true);
                     const winW = headerView.getUint16(4, true);
                     const winH = headerView.getUint16(6, true);
-
+                    
                     const jpegBlob = new Blob([ab.slice(9)], { type: 'image/jpeg' });
                     createImageBitmap(jpegBlob).then(bitmap => {
                         const canvas = new OffscreenCanvas(winW, winH);
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(bitmap, 0, 0, winW, winH);
                         const imageData = ctx.getImageData(0, 0, winW, winH).data;
-
+                        
                         const total = winW * winH;
                         const pixels = new Uint32Array(total);
-
+                        
                         for (let i = 0; i < total; i++) {
                             const r = imageData[i * 4];
                             const g = imageData[i * 4 + 1];
@@ -290,8 +297,9 @@
                 if (ab.byteLength < 1) return;
                 const view = new DataView(ab);
                 const mode = view.getUint8(0);
-
-                if (mode === 6) {                     if (ab.byteLength < 13) return; 
+                
+                if (mode === 6) { // Single-Pass Full Frame / Dirty Rec Mode
+                    if (ab.byteLength < 13) return; 
                     const x = view.getUint16(1, true);
                     const y = view.getUint16(3, true);
                     const w = view.getUint16(5, true);
@@ -309,19 +317,21 @@
                         if (rleIdx + 3 > rleLen) break;
                         const count = rle[rleIdx++];
                         const c16 = (rle[rleIdx++] << 8) | rle[rleIdx++];
-                                                const r = (c16 >> 8) & 0xFF;
+                        // Decode R8G4B4 to RGBA8888
+                        const r = (c16 >> 8) & 0xFF;
                         const g = ((c16 >> 4) & 0x0F) << 4;
                         const b = (c16 & 0x0F) << 4;
                         const color32 = r | (g << 8) | (b << 16) | (255 << 24);
                         runPixels.fill(color32, pxIdx, Math.min(pxIdx + count, total));
                         pxIdx += count;
                     }
-
+                    
                     self.postMessage({ videoX: x, y: y, w: w, h: h, pixels: runPixels, isFullFrame: false }, [runPixels.buffer]);
                     return;
                 }
-
-                if (mode === 5) {                     if (ab.byteLength < 4) return;
+                
+                if (mode === 5) { // Batch Mode
+                    if (ab.byteLength < 4) return;
                     const isFullSync = view.getUint8(1) === 1;
                     const isFrameEnd = view.getUint8(2) === 1;
                     const stripeCount = view.getUint8(3);
@@ -354,14 +364,15 @@
                                 if (rleIdx + 3 > rleLen) break;
                                 const count = rle[rleIdx++];
                                 const c16 = (rle[rleIdx++] << 8) | rle[rleIdx++];
-                                                                const rr = (c16 >> 8) & 0xFF;
+                                // Decode R8G4B4 to RGBA8888
+                                const rr = (c16 >> 8) & 0xFF;
                                 const gg = ((c16 >> 4) & 0x0F) << 4;
                                 const bb = (c16 & 0x0F) << 4;
                                 const color32 = rr | (gg << 8) | (bb << 16) | (255 << 24);
                                 runPixels.fill(color32, pxIdx, Math.min(pxIdx + count, total));
                                 pxIdx += count;
                             }
-
+                            
                             runsToPost.push({ videoX: startX, y: y, w: runW, h: h, pixels: runPixels });
                             offset += rleLen;
                         }
@@ -380,7 +391,8 @@
     </script>
 
     <script>
-                const WS_PORT_UI = 8081;
+        // --- CONSTANTS ---
+        const WS_PORT_UI = 8081;
         const DEFAULT_WIDTH = 800;
         const DEFAULT_HEIGHT = 600;
         const APPEND_THROTTLE_MS = 25;
@@ -388,11 +400,14 @@
         const WHEEL_THROTTLE_MS = 50;
         const MIN_BUFFER_TIME = 1.5;
 
-                const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+        // Firefox detection and codec selection
+        const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 
-                function getMSECodec() {
+        // Check if browser supports audio/mpeg with MSE
+        function getMSECodec() {
             if (!window.MediaSource) return null;
-                        const codecs = ['audio/mpeg', 'audio/mp4; codecs="mp4a.40.2"'];
+            // Test codecs in order of preference
+            const codecs = ['audio/mpeg', 'audio/mp4; codecs="mp4a.40.2"'];
             for (const codec of codecs) {
                 if (MediaSource.isTypeSupported(codec)) {
                     console.log(`MSE codec supported: ${codec}`);
@@ -402,10 +417,13 @@
             return null;
         }
         const MIME_CODEC = getMSECodec();
-                        const USE_BLOB_AUDIO = isFirefox || !MIME_CODEC;
+        // Firefox reports audio/mpeg as supported but it doesn't actually work
+        // Force blob audio for Firefox
+        const USE_BLOB_AUDIO = isFirefox || !MIME_CODEC;
         if (USE_BLOB_AUDIO) {
             console.log(`Using Blob Audio fallback (Firefox=${isFirefox})`);
-                        if (isFirefox) {
+            // Show warning to Firefox users
+            if (isFirefox) {
                 console.warn('⚠️ Firefox audio streaming has limitations. Chrome is recommended for best audio quality.');
             }
         } else {
@@ -418,9 +436,44 @@
         const PACKET_TYPE_JPEG_VIDEO = 0x04;
         const PACKET_TYPE_SINGLE_RLE = 0x06;
         const PACKET_TYPE_MP4_VIDEO = 0x07;
+        const PACKET_TYPE_AUDIO_CLIP = 0x0C;
         const PACKET_TYPE_AUDIO_STREAM = 0x0A;
+        
+        // --- Clip Sequencing ---
+        const audioClipQueue = [];
+        let isClipPlaying = false;
+        function playNextAudioClip() {
+            if (audioClipQueue.length === 0) {
+                isClipPlaying = false;
+                return;
+            }
+            isClipPlaying = true;
+            const blob = audioClipQueue.shift();
+            const url = URL.createObjectURL(blob);
+            const player = new Audio(url);
+            player.onended = () => {
+                URL.revokeObjectURL(url);
+                if (uiSocket && uiSocket.readyState === WebSocket.OPEN) {
+                    uiSocket.send("CLIP_DONE");
+                }
+                playNextAudioClip();
+            };
+            player.onerror = () => {
+                URL.revokeObjectURL(url);
+                if (uiSocket && uiSocket.readyState === WebSocket.OPEN) {
+                    uiSocket.send("CLIP_DONE");
+                }
+                playNextAudioClip();
+            };
+            player.play().catch(e => {
+                console.warn("Direct play blocked or failed:", e);
+                URL.revokeObjectURL(url);
+                playNextAudioClip();
+            });
+        }
 
-                const canvas = document.getElementById('glCanvas');
+        // --- DOM ---
+        const canvas = document.getElementById('glCanvas');
         const frameContainer = document.getElementById('frameContainer');
         const gl = canvas.getContext('webgl', { alpha: false, depth: false, antialias: true });
         const connectButton = document.getElementById('connectButton');
@@ -431,7 +484,8 @@
         const fpsDisplay = document.getElementById('fpsDisplay');
         const audioPlayer = document.getElementById('audioPlayer');
 
-                let uiSocket;
+        // --- STATE ---
+        let uiSocket;
         let videoWorker;
         let frameCount = 0;
         let lastFpsTime = performance.now();
@@ -441,29 +495,37 @@
 
         let frameWidth = DEFAULT_WIDTH;
         let frameHeight = DEFAULT_HEIGHT;
-        let sliceHeight = 16; 
-                let audioQueue = [];
+        let sliceHeight = 16; // Matches firmware SLICE_HEIGHT
+
+        // Audio State
+        let audioQueue = [];
         let mediaSource = null;
         let sourceBuffer = null;
         let appendInterval = null;
         let isAudioStopped = false;
         let audioStreamActive = false;
 
-                let blobAudioChunks = [];
+
+        // Blob Audio State (Firefox fallback)
+        let blobAudioChunks = [];
         let blobAudioPlayer = null;
         let blobPlaybackActive = false;
         let blobBufferTimeout = null;
 
-                let mp4Chunks = [];
+        // MP4 Video State
+        let mp4Chunks = [];
         let mp4ExpectedSize = 0;
         let mp4ReceivedSize = 0;
         let mp4VideoElement = null;
         let mp4BlobUrl = null;
-        let mp4WindowRect = { x: 0, y: 0, w: 320, h: 240 }; 
-                let ytOverlay = null;
+        let mp4WindowRect = { x: 0, y: 0, w: 320, h: 240 }; // Window coords from ESP32
+
+        // Web Player State
+        let ytOverlay = null;
         let ytIframe = null;
         let ytWindowRect = { x: 0, y: 0, w: 336, h: 200 };
-        let currentSiteType = 'generic'; 
+        let currentSiteType = 'generic'; // 'youtube', 'bitchute', 'odysee', 'aniwatch', 'generic'
+
         function cleanupYTPlayer() {
             if (ytOverlay) {
                 ytOverlay.remove();
@@ -490,7 +552,8 @@
                 const u = new URL(url);
                 const h = u.hostname.toLowerCase();
 
-                                if (h.includes('youtube.com') || h.includes('youtu.be')) {
+                // YouTube: convert watch URLs to embed
+                if (h.includes('youtube.com') || h.includes('youtu.be')) {
                     let videoId = '';
                     if (h.includes('youtu.be')) {
                         videoId = u.pathname.substring(1);
@@ -504,36 +567,47 @@
                     }
                 }
 
-                                if (h.includes('bitchute.com')) {
+                // BitChute: convert video URLs to embed
+                if (h.includes('bitchute.com')) {
                     const match = u.pathname.match(/\/video\/([\w-]+)/);
                     if (match) {
                         return `https://www.bitchute.com/embed/${match[1]}/`;
                     }
                 }
 
-                                if (h.includes('odysee.com')) {
-                                        const pathParts = u.pathname.split('/');
+                // Odysee: convert claim URLs to embed
+                if (h.includes('odysee.com')) {
+                    // Odysee embed format: https://odysee.com/$/embed/claim-name/claim-id
+                    const pathParts = u.pathname.split('/');
                     if (pathParts.length >= 3 && !u.pathname.includes('/$/embed/')) {
-                                                const claimPath = pathParts.filter(p => p && p !== '$').join('/');
+                        // Remove leading empty string from split
+                        const claimPath = pathParts.filter(p => p && p !== '$').join('/');
                         return `https://odysee.com/$/embed/${claimPath}`;
                     }
                 }
 
-                                            } catch (e) {
+                // AniwatchTV: load directly (no standard embed format)
+                // These sites typically work in iframes as-is
+            } catch (e) {
                 console.error('URL Conversion Error:', e);
             }
             return url;
         }
 
-                let initialFrameBuffer = new Uint32Array(DEFAULT_WIDTH * DEFAULT_HEIGHT);
-        let receivedSlices = [];         let isInitialSync = false;
+        // Video State
+        let initialFrameBuffer = new Uint32Array(DEFAULT_WIDTH * DEFAULT_HEIGHT);
+        let receivedSlices = []; // Dynamic sizing
+        let isInitialSync = false;
 
-                let texture = null;         let textureInitialized = false;
+        // Texture State
+        let texture = null; // Use a single main texture
+        let textureInitialized = false;
 
         let syncTimeoutHandle = null;
         let needsRedraw = false;
 
-                let sfxCtx = null;
+        // --- SFX SYSTEM ---
+        let sfxCtx = null;
         function initAudioContext() {
             if (!sfxCtx) {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -612,7 +686,8 @@
                     const source = sfxCtx.createBufferSource();
                     source.buffer = shotgunBuffer;
                     const shotGain = sfxCtx.createGain();
-                    shotGain.gain.setValueAtTime(2.0, t);                     source.connect(shotGain);
+                    shotGain.gain.setValueAtTime(2.0, t); // Boost volume
+                    source.connect(shotGain);
                     shotGain.connect(sfxCtx.destination);
                     source.start(t);
                     break;
@@ -626,7 +701,8 @@
                     osc.stop(t + 0.1);
                     break;
                 case "DUCK_YELP":
-                                        osc.type = "sine";
+                    // Synthesize a quick, high-pitched "yelp" for Duck Hunt
+                    osc.type = "sine";
                     osc.frequency.setValueAtTime(880, t);
                     osc.frequency.exponentialRampToValueAtTime(1200, t + 0.05);
                     osc.frequency.exponentialRampToValueAtTime(880, t + 0.1);
@@ -638,7 +714,8 @@
             }
         }
 
-                if (!gl) {
+        // --- WEBGL SETUP ---
+        if (!gl) {
             console.error("WebGL not supported!");
             statusDiv.textContent = "Error: WebGL Not Supported";
             statusDiv.style.color = "var(--error)";
@@ -682,7 +759,8 @@
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-                function updateCanvasSize() {
+        // High-DPI Awareness
+        function updateCanvasSize() {
             const dpr = window.devicePixelRatio || 1;
             const displayWidth = frameContainer.clientWidth;
             const displayHeight = frameContainer.clientHeight;
@@ -699,7 +777,8 @@
 
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, DEFAULT_WIDTH, DEFAULT_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
-                function renderLoop() {
+        // --- RENDER LOOP ---
+        function renderLoop() {
             if (needsRedraw) {
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
                 needsRedraw = false;
@@ -709,7 +788,8 @@
         }
         requestAnimationFrame(renderLoop);
 
-                const blob = new Blob([document.getElementById('decoder-worker').textContent], { type: 'text/javascript' });
+        // --- VIDEO WORKER ---
+        const blob = new Blob([document.getElementById('decoder-worker').textContent], { type: 'text/javascript' });
         videoWorker = new Worker(window.URL.createObjectURL(blob));
 
         function finalizeInitialSync() {
@@ -719,8 +799,10 @@
             if (syncTimeoutHandle) clearTimeout(syncTimeoutHandle);
 
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);             
-                        const pixels8 = new Uint8Array(initialFrameBuffer.buffer);
+            gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); // RGBA is 4-byte aligned
+            
+            // hard-fixed 800x600 - Now using RGBA for high-precision Red channel
+            const pixels8 = new Uint8Array(initialFrameBuffer.buffer);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 800, 600, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels8);
 
             needsRedraw = true;
@@ -731,7 +813,8 @@
         videoWorker.onmessage = (e) => {
             const { runs, y, w, h, pixels, isFullFrame } = e.data;
 
-                        if (isInitialSync || !textureInitialized) {
+            // Trigger sync finalization on ANY valid video packet if we haven't yet
+            if (isInitialSync || !textureInitialized) {
                 isInitialSync = true; 
                 finalizeInitialSync();
             }
@@ -755,7 +838,8 @@
             }
         };
 
-                function disconnectAudioThrottle() {
+        // --- AUDIO STREAMING ---
+        function disconnectAudioThrottle() {
             if (appendInterval) {
                 clearInterval(appendInterval);
                 appendInterval = null;
@@ -767,7 +851,8 @@
             audioStreamActive = false;
 
             if (USE_BLOB_AUDIO) {
-                                console.log('Initializing Blob Audio system (Firefox mode)');
+                // Firefox-compatible Blob Audio approach
+                console.log('Initializing Blob Audio system (Firefox mode)');
                 blobAudioChunks = [];
                 blobPlaybackActive = true;
                 audioStreamActive = true;
@@ -777,25 +862,33 @@
                 return;
             }
 
-                        if (!window.MediaSource || !MIME_CODEC) return console.log("MSE not supported");
+            // Standard MSE approach for Chrome/Edge
+            if (!window.MediaSource || !MIME_CODEC) return console.log("MSE not supported");
 
-                                    if (mediaSource) {
+            // Clean up old MediaSource
+            if (mediaSource) {
                 try {
                     if (mediaSource.readyState === 'open') {
                         mediaSource.endOfStream();
                     }
-                } catch (e) {  }
+                } catch (e) { /* Ignore errors on old MS */ }
             }
+            sourceBuffer = null;
 
-                        mediaSource = new MediaSource();
+            // Create a brand new MediaSource instance
+            mediaSource = new MediaSource();
             audioPlayer.src = URL.createObjectURL(mediaSource);
+            audioPlayer.load(); // Explicitly trigger load to avoid stalls
+            console.log("MediaSource URL created and loaded.");
 
             mediaSource.onsourceopen = () => {
                 try {
-                                        sourceBuffer = mediaSource.addSourceBuffer(MIME_CODEC);
+                    // Create new source buffer
+                    sourceBuffer = mediaSource.addSourceBuffer(MIME_CODEC);
                     sourceBuffer.mode = 'sequence';
                     sourceBuffer.onupdateend = () => {
-                                                if (audioPlayer.paused && !isAudioStopped && audioStreamActive) {
+                        // Auto-play logic
+                        if (audioPlayer.paused && !isAudioStopped && audioStreamActive) {
                             const buffered = sourceBuffer.buffered;
                             if (buffered.length > 0) {
                                 const bufferAhead = buffered.end(buffered.length - 1) - audioPlayer.currentTime;
@@ -809,30 +902,71 @@
                     disconnectAudioThrottle();
                     appendInterval = setInterval(processAudioQueue, APPEND_THROTTLE_MS);
                     audioStreamActive = true;
-                    console.log("Audio system initialized (MSE mode)");
+                    console.log("Audio system initialized (MSE mode). MIME:", MIME_CODEC);
+
+                    audioPlayer.onplay = () => console.log("Audio Element: PLAYING");
+                    audioPlayer.onpause = () => console.log("Audio Element: PAUSED");
+                    audioPlayer.onwaiting = () => console.warn("Audio Element: WAITING (Underrun)");
                 } catch (e) {
                     console.error("SourceBuffer creation failed", e);
                 }
             };
         }
 
-                        let blobChunks = [];
+        function processAudioQueue() {
+            if (!sourceBuffer || sourceBuffer.updating || isAudioStopped || !audioStreamActive) return;
+
+            const startTime = performance.now();
+            while (audioQueue.length > 0 && (performance.now() - startTime) < 10) {
+                try {
+                    if (sourceBuffer.updating) break;
+                    const audioData = audioQueue.shift();
+                    sourceBuffer.appendBuffer(audioData);
+                } catch (e) {
+                    // Handle buffer fullness gracefully
+                    if (e.name === 'QuotaExceededError') {
+                        if (sourceBuffer && !sourceBuffer.updating && audioPlayer.currentTime > 5) {
+                            try {
+                                sourceBuffer.remove(0, audioPlayer.currentTime - 2);
+                            } catch (err) {
+                                console.log("Buffer removal failed:", err);
+                            }
+                        }
+                        break;
+                    } else {
+                        console.log("Audio append error:", e);
+                        audioQueue.shift(); // Drop problematic chunk
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Blob Audio - Simple Single-Player Approach for Firefox
+        // Collect chunks and play when threshold reached, then seamlessly transition
+        let blobChunks = [];
         let currentBlobPlayer = null;
-        let nextBlobPlayer = null;         let isPlayingBlob = false;
-        const BLOB_INITIAL_THRESHOLD = 48000;         const BLOB_NEXT_THRESHOLD = 32000; 
+        let nextBlobPlayer = null; // Pre-buffered next segment
+        let isPlayingBlob = false;
+        const BLOB_INITIAL_THRESHOLD = 48000; // ~3 seconds of 128kbps for initial buffering
+        const BLOB_NEXT_THRESHOLD = 32000; // Threshold to prepare next segment
+
         function processBlobAudioQueue() {
             if (!blobPlaybackActive || isAudioStopped) return;
 
-                        while (audioQueue.length > 0) {
+            // Collect all available chunks
+            while (audioQueue.length > 0) {
                 blobChunks.push(audioQueue.shift());
             }
 
             const totalSize = blobChunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
 
-                        if (!isPlayingBlob && totalSize > BLOB_INITIAL_THRESHOLD) {
+            // If not currently playing, check if we have enough to start
+            if (!isPlayingBlob && totalSize > BLOB_INITIAL_THRESHOLD) {
                 startBlobPlayback();
             }
-                        else if (isPlayingBlob && !nextBlobPlayer && totalSize > BLOB_NEXT_THRESHOLD) {
+            // If playing and we have chunks, prepare next segment
+            else if (isPlayingBlob && !nextBlobPlayer && totalSize > BLOB_NEXT_THRESHOLD) {
                 prepareNextBlobSegment();
             }
         }
@@ -841,7 +975,8 @@
             if (blobChunks.length === 0) return;
 
             const blob = new Blob(blobChunks, { type: 'audio/mpeg' });
-            blobChunks = []; 
+            blobChunks = []; // Clear for next segment
+
             const url = URL.createObjectURL(blob);
             currentBlobPlayer = new Audio(url);
             currentBlobPlayer.volume = 1.0;
@@ -851,14 +986,16 @@
                 console.log('Blob segment ended');
                 URL.revokeObjectURL(url);
 
-                                if (nextBlobPlayer) {
+                // Switch to pre-buffered next player if available
+                if (nextBlobPlayer) {
                     currentBlobPlayer = nextBlobPlayer;
                     nextBlobPlayer = null;
                     currentBlobPlayer.play().catch(e => console.log('Next segment play failed:', e));
                 } else {
                     currentBlobPlayer = null;
                     isPlayingBlob = false;
-                                        if (blobChunks.length > 0 || audioQueue.length > 0) {
+                    // Check if more data arrived
+                    if (blobChunks.length > 0 || audioQueue.length > 0) {
                         processBlobAudioQueue();
                     }
                 }
@@ -882,12 +1019,14 @@
             if (blobChunks.length === 0) return;
 
             const blob = new Blob(blobChunks, { type: 'audio/mpeg' });
-            blobChunks = []; 
+            blobChunks = []; // Clear for next segment
+
             const url = URL.createObjectURL(blob);
             nextBlobPlayer = new Audio(url);
             nextBlobPlayer.volume = 1.0;
 
-                        nextBlobPlayer.load();
+            // Pre-load the audio
+            nextBlobPlayer.load();
 
             nextBlobPlayer.onended = () => {
                 URL.revokeObjectURL(url);
@@ -896,7 +1035,8 @@
                     isPlayingBlob = false;
                 }
                 nextBlobPlayer = null;
-                                if (blobChunks.length > 0 || audioQueue.length > 0) {
+                // Continue if more data
+                if (blobChunks.length > 0 || audioQueue.length > 0) {
                     processBlobAudioQueue();
                 }
             };
@@ -904,39 +1044,15 @@
             console.log(`Pre-buffered next blob (${(blob.size / 1024).toFixed(1)}KB)`);
         }
 
-        function processAudioQueue() {
-            if (!sourceBuffer || sourceBuffer.updating || isAudioStopped || !audioStreamActive) return;
 
-            const startTime = performance.now();
-            while (audioQueue.length > 0 && (performance.now() - startTime) < 10) {
-                try {
-                    if (sourceBuffer.updating) break;
-                    const audioData = audioQueue.shift();
-                    sourceBuffer.appendBuffer(audioData);
-                } catch (e) {
-                                        if (e.name === 'QuotaExceededError') {
-                        if (sourceBuffer && !sourceBuffer.updating && audioPlayer.currentTime > 5) {
-                            try {
-                                sourceBuffer.remove(0, audioPlayer.currentTime - 2);
-                            } catch (err) {
-                                console.log("Buffer removal failed:", err);
-                            }
-                        }
-                    } else {
-                        console.log("Audio append error:", e);
-                        break;
-                    }
-                }
-            }
-        }
-
-                function handleAudioStop() {
+        // --- AUDIO CONTROL HANDLERS ---
+        function handleAudioStop() {
             console.log("Stopping audio playback");
             isAudioStopped = true;
             audioStreamActive = false;
-            blobPlaybackActive = false;
 
-                        if (currentBlobPlayer) {
+            // Set state tracking to null to stop appending
+            if (currentBlobPlayer) {
                 currentBlobPlayer.pause();
                 URL.revokeObjectURL(currentBlobPlayer.src);
                 currentBlobPlayer = null;
@@ -949,12 +1065,15 @@
             blobChunks = [];
             isPlayingBlob = false;
 
-                        audioPlayer.pause();
+            // Stop MSE audio
+            audioPlayer.pause();
             audioPlayer.currentTime = 0;
 
-                        audioQueue.length = 0;
+            // Clear the audio queue
+            audioQueue.length = 0;
 
-                        if (sourceBuffer && !sourceBuffer.updating) {
+            // Cleanup Buffer
+            if (sourceBuffer && !sourceBuffer.updating) {
                 try {
                     sourceBuffer.abort();
                 } catch (e) { }
@@ -972,9 +1091,14 @@
             isAudioStopped = false;
             audioStreamActive = true;
 
-                        connectAudio();
+            // We do NOT clear the queue here if auto-resume triggered it, 
+            // as we want to play the packet that woke us up.
 
-                        setTimeout(() => {
+            // Reinitialize audio system cleanly
+            connectAudio();
+
+            // Start playback
+            setTimeout(() => {
                 audioPlayer.play().catch(e => console.log("Playback resume blocked:", e));
             }, 100);
         }
@@ -989,7 +1113,8 @@
             connectAudio();
         }
 
-                function cleanupMP4Player() {
+        // --- MP4 VIDEO PLAYBACK ---
+        function cleanupMP4Player() {
             if (mp4VideoElement) {
                 mp4VideoElement.pause();
                 mp4VideoElement.src = '';
@@ -1012,23 +1137,28 @@
 
             cleanupMP4Player();
 
-                        const blob = new Blob(mp4Chunks, { type: 'video/mp4' });
-            mp4Chunks = [];             mp4BlobUrl = URL.createObjectURL(blob);
+            // Create blob from accumulated chunks
+            const blob = new Blob(mp4Chunks, { type: 'video/mp4' });
+            mp4Chunks = []; // Free memory
+            mp4BlobUrl = URL.createObjectURL(blob);
             console.log(`MP4 Blob created: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
 
-                        const container = document.getElementById('frameContainer');
+            // Calculate scale relative to the canvas inside its container
+            const container = document.getElementById('frameContainer');
             const cw = container.clientWidth;
             const ch = container.clientHeight;
             const scaleX = cw / frameWidth;
             const scaleY = ch / frameHeight;
 
-                        const pad = 4;
+            // Map ESP32 window coordinates to container-relative coordinates (with padding)
+            const pad = 4;
             const vidLeft = (mp4WindowRect.x + pad) * scaleX;
             const vidTop = (mp4WindowRect.y + pad) * scaleY;
             const vidWidth = (mp4WindowRect.w - pad * 2) * scaleX;
             const vidHeight = (mp4WindowRect.h - pad * 2) * scaleY;
 
-                        const overlay = document.createElement('div');
+            // Create overlay container positioned exactly over the video player window
+            const overlay = document.createElement('div');
             overlay.id = 'mp4Overlay';
             overlay.style.cssText = `
                 position: absolute;
@@ -1040,7 +1170,8 @@
                 z-index: 100;
             `;
 
-                        mp4VideoElement = document.createElement('video');
+            // Create video element (fills the overlay, browser composites it)
+            mp4VideoElement = document.createElement('video');
             mp4VideoElement.src = mp4BlobUrl;
             mp4VideoElement.style.cssText = `
                 position: absolute;
@@ -1054,7 +1185,8 @@
             mp4VideoElement.volume = 1.0;
             mp4VideoElement.playsInline = true;
 
-                        const controls = document.createElement('div');
+            // Create controls bar
+            const controls = document.createElement('div');
             controls.style.cssText = `
                 position: absolute;
                 bottom: 10px;
@@ -1079,21 +1211,24 @@
                 font-weight: bold;
             `;
 
-                        const playBtn = document.createElement('button');
+            // Play button
+            const playBtn = document.createElement('button');
             playBtn.textContent = '▶ Play';
             playBtn.style.cssText = btnStyle + 'background: #2196F3;';
             playBtn.onclick = () => {
                 mp4VideoElement.play().catch(e => console.log('Play blocked:', e));
             };
 
-                        const pauseBtn = document.createElement('button');
+            // Pause button
+            const pauseBtn = document.createElement('button');
             pauseBtn.textContent = '⏸ Pause';
             pauseBtn.style.cssText = btnStyle + 'background: #FF9800;';
             pauseBtn.onclick = () => {
                 mp4VideoElement.pause();
             };
 
-                        const stopBtn = document.createElement('button');
+            // Stop button
+            const stopBtn = document.createElement('button');
             stopBtn.textContent = '⏹ Stop';
             stopBtn.style.cssText = btnStyle + 'background: #F44336;';
             stopBtn.onclick = () => {
@@ -1104,7 +1239,8 @@
             controls.appendChild(pauseBtn);
             controls.appendChild(stopBtn);
 
-                        const progressRow = document.createElement('div');
+            // Playback progress row
+            const progressRow = document.createElement('div');
             progressRow.style.cssText = `
                 position: absolute;
                 bottom: 52px;
@@ -1131,7 +1267,8 @@
             seekFill.style.cssText = 'height:100%; width:0%; background:#2196F3; border-radius:3px; transition:width 0.2s;';
             seekBar.appendChild(seekFill);
 
-                        seekBar.onclick = (ev) => {
+            // Click to seek
+            seekBar.onclick = (ev) => {
                 if (!mp4VideoElement || !mp4VideoElement.duration) return;
                 const rect = seekBar.getBoundingClientRect();
                 const pct = (ev.clientX - rect.left) / rect.width;
@@ -1144,7 +1281,8 @@
                 return m + ':' + (sec < 10 ? '0' : '') + sec;
             };
 
-                        mp4VideoElement.ontimeupdate = () => {
+            // Update progress during playback
+            mp4VideoElement.ontimeupdate = () => {
                 const cur = mp4VideoElement.currentTime || 0;
                 const dur = mp4VideoElement.duration || 0;
                 if (dur > 0) {
@@ -1180,16 +1318,19 @@
                 container.appendChild(overlay);
             }
 
-                        mp4VideoElement.play().catch(e => {
+            // Auto-play
+            mp4VideoElement.play().catch(e => {
                 console.log('Auto-play blocked, user must click Play:', e);
             });
 
-                        mp4VideoElement.onended = () => {
+            // Clean up when video ends
+            mp4VideoElement.onended = () => {
                 console.log('MP4 playback finished');
                 cleanupMP4Player();
             };
 
-                        const repositionOverlay = () => {
+            // Reposition on window resize
+            const repositionOverlay = () => {
                 const cw = container.clientWidth;
                 const ch = container.clientHeight;
                 const sx = cw / frameWidth;
@@ -1203,14 +1344,16 @@
             mp4VideoElement._resizeHandler = repositionOverlay;
         }
 
-                let fpsInterval = setInterval(() => {
+        // --- FPS LOOP ---
+        let fpsInterval = setInterval(() => {
             const now = performance.now();
             fpsDisplay.textContent = `FPS: ${(frameCount / ((now - lastFpsTime) / 1000)).toFixed(1)}`;
             frameCount = 0;
             lastFpsTime = now;
         }, 1000);
 
-                pingButton.onclick = () => {
+        // --- PING BOARD ---
+        pingButton.onclick = () => {
             const ip = ipInput.value.trim();
             if (!ip) return;
             statusDiv.textContent = `Pinging ${ip}...`;
@@ -1232,11 +1375,13 @@
             };
         };
 
-                connectButton.onclick = () => {
+        // --- MAIN CONNECTION LOGIC ---
+        connectButton.onclick = () => {
             if (uiSocket) {
                 if (uiSocket) uiSocket.close();
                 disconnectAudioThrottle();
-                handleAudioStop();                 uiSocket = null;
+                handleAudioStop(); // Stop audio when disconnecting
+                uiSocket = null;
                 textureInitialized = false;
                 isInitialSync = false;
                 connectButton.textContent = "Connect";
@@ -1256,7 +1401,8 @@
             connectAudio();
 
             statusDiv.textContent = "Connecting...";
-            uiSocket = new WebSocket(`ws://${ip}:${WS_PORT_UI}/`);             uiSocket.binaryType = "arraybuffer";
+            uiSocket = new WebSocket(`ws://${ip}:${WS_PORT_UI}/`); // Default root path
+            uiSocket.binaryType = "arraybuffer";
 
             uiSocket.onopen = () => {
                 statusDiv.textContent = "Connected (Syncing...)";
@@ -1276,12 +1422,19 @@
                     const packetType = view.getUint8(0);
 
                     if (packetType === PACKET_TYPE_AUDIO) {
-                                                                                                if (isAudioStopped) {
+                        // CRITICAL FIX: AUTO-WAKEUP
+                        // If we are currently "Stopped" but the board starts sending audio data,
+                        // we must immediately wake up and re-initialize the audio engine.
+                        if (isAudioStopped) {
                             console.log("Audio packet received while stopped. Auto-resuming...");
                             handleAudioResume();
                         }
 
-                                                if (audioStreamActive) {
+                        // Only push to queue if we have successfully (re)activated the stream
+                        if (!audioStreamActive && !isAudioStopped) {
+                            audioStreamActive = true;
+                        }
+                        if (audioStreamActive) {
                             audioQueue.push(data.slice(1));
                         }
                     } else if (packetType === PACKET_TYPE_MP4_VIDEO) {
@@ -1289,10 +1442,12 @@
                         mp4Chunks.push(chunk);
                         mp4ReceivedSize += chunk.byteLength;
 
-                                                if (mp4VideoElement && mp4VideoElement._sb && !mp4VideoElement._sb.updating) {
+                        // 1. Try Progressive (MSE)
+                        if (mp4VideoElement && mp4VideoElement._sb && !mp4VideoElement._sb.updating) {
                             try {
                                 mp4VideoElement._sb.appendBuffer(chunk);
-                                                                if (mp4VideoElement.paused && mp4ReceivedSize > 512 * 1024) {
+                                // Initial auto-play attempt after some data
+                                if (mp4VideoElement.paused && mp4ReceivedSize > 512 * 1024) {
                                     mp4VideoElement.play().catch(() => { });
                                 }
                             } catch (e) {
@@ -1301,7 +1456,8 @@
                             }
                         }
 
-                                                const progressEl = document.getElementById('mp4Progress');
+                        // 2. Update Beautiful Progress UI
+                        const progressEl = document.getElementById('mp4Progress');
                         if (progressEl && mp4ExpectedSize > 0) {
                             const pct = Math.min(100, (mp4ReceivedSize / mp4ExpectedSize) * 100);
                             const bar = progressEl.querySelector('.bar');
@@ -1316,7 +1472,8 @@
                             }
                         }
                     } else if (packetType === PACKET_TYPE_AUDIO_STREAM) {
-                                                const pcmData = new Int16Array(data.slice(1));
+                        // Received raw PCM 16-bit 44.1kHz Stereo
+                        const pcmData = new Int16Array(data.slice(1));
                         if (sfxCtx) {
                             const buffer = sfxCtx.createBuffer(2, pcmData.length / 2, 44100);
                             const left = buffer.getChannelData(0);
@@ -1330,8 +1487,19 @@
                             source.connect(sfxCtx.destination);
                             source.start();
                         }
+                    } else if (packetType === PACKET_TYPE_AUDIO_CLIP) {
+                        // --- DIRECT ONE-SHOT SEQUENCING ---
+                        try {
+                            const audioClipData = data.slice(1);
+                            const blob = new Blob([audioClipData], { type: 'audio/mpeg' });
+                            audioClipQueue.push(blob);
+                            if (!isClipPlaying) playNextAudioClip();
+                        } catch (e) {
+                            console.error("Audio Clip queue error:", e);
+                        }
                     } else if (packetType === PACKET_TYPE_VIDEO || packetType === PACKET_TYPE_RAW8 || packetType === PACKET_TYPE_JPEG_VIDEO || packetType === 5 || packetType === PACKET_TYPE_SINGLE_RLE) {
-                                                const videoData = (packetType === PACKET_TYPE_JPEG_VIDEO || packetType === 5 || packetType === PACKET_TYPE_SINGLE_RLE) ? data : data.slice(1);
+                        // Route all video packets (0x02, 0x03, 0x04, 0x05, 0x06) to the worker
+                        const videoData = (packetType === PACKET_TYPE_JPEG_VIDEO || packetType === 5 || packetType === PACKET_TYPE_SINGLE_RLE) ? data : data.slice(1);
                         videoWorker.postMessage({ buffer: videoData, type: packetType }, [videoData]);
                     }
                 } else if (typeof e.data === 'string') {
@@ -1385,7 +1553,8 @@
 
                         const container = document.getElementById('frameContainer');
                         if (!container) return;
-                                                const sX = container.clientWidth / (frameWidth || 800);
+                        // ESP32 Board resolution is strictly 800x600 as per user confirmation
+                        const sX = container.clientWidth / (frameWidth || 800);
                         const sY = container.clientHeight / (frameHeight || 600);
 
                         const pDiv = document.createElement('div');
@@ -1405,7 +1574,8 @@
                         `;
                         container.appendChild(pDiv);
 
-                                                const overlay = document.createElement('div');
+                        // 2. Video Overlay
+                        const overlay = document.createElement('div');
                         overlay.id = 'mp4Overlay';
                         overlay.style.cssText = `
                             position:absolute; left:${mp4WindowRect.x * sX}px; top:${mp4WindowRect.y * sY}px;
@@ -1420,10 +1590,12 @@
                         console.log(`MP4 Pipeline ready: ${(mp4ExpectedSize / 1024 / 1024).toFixed(1)}MB`);
                     } else if (cmd.startsWith("MP4:END")) {
                         console.log("Browser received MP4:END. Accumulated: " + mp4Chunks.length + " chunks");
-                                                if (mp4VideoElement && mp4VideoElement._ms && mp4VideoElement._ms.readyState === 'open') {
+                        // Signal end of stream if using MSE
+                        if (mp4VideoElement && mp4VideoElement._ms && mp4VideoElement._ms.readyState === 'open') {
                             try { if (!mp4VideoElement._sb.updating) mp4VideoElement._ms.endOfStream(); } catch (e) { }
                         }
-                                                if (mp4VideoElement && (mp4VideoElement.paused || mp4VideoElement.currentTime === 0)) {
+                        // FALLBACK: If video is NOT playing yet, create a blob and play it now
+                        if (mp4VideoElement && (mp4VideoElement.paused || mp4VideoElement.currentTime === 0)) {
                             console.log("Progressive playback didn't start. Falling back to full Blob playback.");
                             const blob = new Blob(mp4Chunks, { type: 'video/mp4' });
                             mp4BlobUrl = URL.createObjectURL(blob);
@@ -1468,7 +1640,8 @@
                         console.log(`Remote ${cmd} command received`);
                         cleanupMP4Player();
                     }
-                                        else if (cmd.startsWith("YT:PLAY:")) {
+                    // --- WEB PLAYER COMMANDS ---
+                    else if (cmd.startsWith("YT:PLAY:")) {
                         const parts = cmd.substring(8).split(':');
                         let url = parts[0];
                         if (parts.length > 5) {
@@ -1484,7 +1657,8 @@
                         currentSiteType = detectSiteType(url);
                         console.log('WebPlayer Navigating to: ' + url + ' (type: ' + currentSiteType + ')', ytWindowRect);
                         cleanupYTPlayer();
-                        currentSiteType = detectSiteType(url); 
+                        currentSiteType = detectSiteType(url); // Re-set after cleanup
+
                         const container = document.getElementById('frameContainer');
                         if (!container) {
                             console.error('CRITICAL: frameContainer not found!');
@@ -1530,7 +1704,8 @@
                             if (currentSiteType === 'youtube') {
                                 ytIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
                             } else {
-                                                                try {
+                                // Generic: try to pause the first <video> element inside the iframe
+                                try {
                                     ytIframe.contentWindow.postMessage({ action: 'pause' }, '*');
                                 } catch (e) { console.log('Cross-origin pause blocked, expected for: ' + currentSiteType); }
                             }
@@ -1577,7 +1752,8 @@
                 statusDiv.style.color = "var(--error)";
                 uiSocket = null;
                 disconnectAudioThrottle();
-                handleAudioStop();                 textureInitialized = false;
+                handleAudioStop(); // Stop audio when connection is lost
+                textureInitialized = false;
             };
 
             uiSocket.onerror = (error) => {
@@ -1586,7 +1762,9 @@
             };
         };
 
-                        const SPECIAL_KEYS = {
+        // --- INPUT HANDLING ---
+        // SPECIAL KEYS MAPPING
+        const SPECIAL_KEYS = {
             "ArrowUp": "ArrowUp", "ArrowDown": "ArrowDown", "ArrowLeft": "ArrowLeft", "ArrowRight": "ArrowRight",
             "Enter": "Enter", "Space": "Space", "Escape": "Esc", "Backspace": "Backspace", "Tab": "Tab",
             "ShiftLeft": "Shift", "ShiftRight": "Shift", "ControlLeft": "Ctrl", "ControlRight": "Ctrl"
@@ -1602,7 +1780,8 @@
             let k = SPECIAL_KEYS[e.code] || SPECIAL_KEYS[e.key] || (e.key.length === 1 ? e.key : null);
 
             if (k) {
-                                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(k)) {
+                // Prevent scrolling with arrows/space
+                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(k)) {
                     e.preventDefault();
                 }
 
@@ -1615,7 +1794,8 @@
         frameEl.onmouseup = (e) => sendMouse('up', e);
         frameEl.onmousemove = (e) => sendMouse('move', e);
 
-                frameEl.addEventListener('wheel', (e) => handleMouseWheel(e), { passive: false });
+        // ADDED: Mouse wheel event listener
+        frameEl.addEventListener('wheel', (e) => handleMouseWheel(e), { passive: false });
 
         let lastMouseTime = 0;
         function sendMouse(type, e) {
@@ -1626,7 +1806,7 @@
             const r = canvas.getBoundingClientRect();
             const x = Math.floor((e.clientX - r.left) * (frameWidth / r.width));
             const y = Math.floor((e.clientY - r.top) * (frameHeight / r.height));
-
+            
             let mval = e.buttons !== undefined ? e.buttons : 0;
             if (type === 'wheel') mval = e.deltaY > 0 ? 1 : -1;
 
@@ -1635,8 +1815,10 @@
             }
         }
 
-                function handleMouseWheel(e) {
-            e.preventDefault(); 
+        // ADDED: Mouse wheel handler function
+        function handleMouseWheel(e) {
+            e.preventDefault(); // Prevent page scrolling
+
             const now = performance.now();
             if (now - lastWheelSendTime < WHEEL_THROTTLE_MS) return;
             lastWheelSendTime = now;
@@ -1645,19 +1827,29 @@
             const x = Math.floor((e.clientX - r.left) * (frameWidth / r.width));
             const y = Math.floor((e.clientY - r.top) * (frameHeight / r.height));
 
-                                                let delta = 0;
+            // Normalize wheel delta across browsers
+            // Most browsers: e.deltaY negative = scroll up, positive = scroll down
+            // We'll send -1 for up, 1 for down (or larger values for faster scrolling)
+            let delta = 0;
 
             if (e.deltaMode === 0) {
-                                delta = Math.sign(e.deltaY) * -1;             } else if (e.deltaMode === 1) {
-                                delta = Math.sign(e.deltaY) * -1;
+                // Pixels mode (standard for most mice)
+                delta = Math.sign(e.deltaY) * -1; // Invert for natural scrolling
+            } else if (e.deltaMode === 1) {
+                // Lines mode
+                delta = Math.sign(e.deltaY) * -1;
             } else {
-                                delta = Math.sign(e.deltaY) * -3;
+                // Pages mode (rare)
+                delta = Math.sign(e.deltaY) * -3;
             }
 
-                        delta = Math.max(-3, Math.min(3, delta));
+            // Clamp delta to reasonable values (-3 to 3)
+            delta = Math.max(-3, Math.min(3, delta));
 
-                        if (x >= 0 && x < frameWidth && y >= 0 && y < frameHeight) {
-                                sendInput(`wheel:${x},${y},${delta}`);
+            // Only send if coordinates are within bounds
+            if (x >= 0 && x < frameWidth && y >= 0 && y < frameHeight) {
+                // Send in format: "wheel:x,y,delta"
+                sendInput(`wheel:${x},${y},${delta}`);
             }
         }
 
