@@ -5,9 +5,9 @@ Project Blue is a full-featured graphical operating system / desktop environment
 
 YouTube Video: https://www.youtube.com/watch?v=wLz_8ZoN-vs
 
-******Use Release Alpha 1.5 (to the right under releases) - do not use older versions because there are bugs *****
 
-This .img file is the SD Card image for Project Blue. Alpha Release Version 1.1
+
+This .img.xz file is the SD Card image for Project Blue. Alpha Release Version 1.5
 
 1. Follow the instructions to flash the img file to the SD card
 2. Insert the SD card into the Milk V Duo S board and plug the USB cable into the board and connect to computer
@@ -22,8 +22,8 @@ This .img file is the SD Card image for Project Blue. Alpha Release Version 1.1
  
   * Report any issues to me DeVante.julian@gmail.com - Enjoy!
  
-  ***Just added Alpha V1.2***
-  Project Blue for the Milk V Duo S  (Aplha V1.2)
+  ***Just added Alpha V1.5***
+  Project Blue for the Milk V Duo S  (Aplha V1.5) to the right under Releases
   
   This is the actual Project Blue bin to be placed on the SD card in the rootfs (in root)
   
