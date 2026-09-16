@@ -5,6 +5,8 @@ Project Blue is a full-featured graphical operating system / desktop environment
 
 YouTube Video: https://www.youtube.com/watch?v=wLz_8ZoN-vs
 
+******Use Release Alpha 1.5 (to the right under releases) - do not use older versions because there are bugs *****
+
 This .img file is the SD Card image for Project Blue. Alpha Release Version 1.1
 
 1. Follow the instructions to flash the img file to the SD card
